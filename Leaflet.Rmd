@@ -1,0 +1,30 @@
+---
+title: "Leaflet"
+author: "Miranda Lupion"
+date: "10/16/2018"
+output: html_document
+---
+
+```{r setup, echo = FALSE, warning = FALSE, message = FALSE, error = FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(leaflet)
+library(tidyverse)
+library(rgdal)
+
+
+rf_map <- readOGR(dsn = "/Users/MLupion/Desktop/GOV 1005/GOV_1005_Final_Project/RUS_adm", layer = "RUS_adm1")
+
+rf_map <- spTransform(rf_map, CRS("+init=epsg:4326"))
+
+leaflet() %>%
+  addProviderTiles(provider = "CartoDB") %>%
+  addPolygons(data = rf_map)
+
+```
+
+
+
+```{r}
+
+
