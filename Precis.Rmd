@@ -13,7 +13,7 @@ library(stringr)
 ```
 
 #Objective 
-This projects aims to visualize two decades (1990 - 2010) of data on 83 of the 85 federal subjects of the Russian Federation. I hope to use Leaflet to create map that allows users to click on individual regions and display popups with information as well as to visualize certain indicators geospatially. I also plan to create a ShinyApp that lets users select regions and indicators to visualize over time.   
+This project aims to visualize two decades (1990 - 2010) of data on 83 of the 85 federal subjects of the Russian Federation. I hope to use Leaflet to create maps that allow users to click on individual regions and display popups with information, as well as to visualize certain indicators geospatially. I also plan to create a ShinyApp that lets users select regions and indicators to visualize over time.   
 
 *****
 
@@ -23,7 +23,7 @@ I am drawing on data from the Inter-university Consortium for Political and Soci
 *****
 
 #Summary statistics and example
-I have loaded the Regions 4 data set, which includes 22 indicators on crime and 1,722 observations.They say that Russia is notorius for its дураки и дороги - its idiots and its roads. Examing the ROADACCIDENT variable (number of accidents per 100,000 people), we can graph the mean accidents for each year across the Russian Federation.   
+I have loaded the Regions 4 data set, which includes 22 indicators on crime and 1,722 observations. They say that Russia is notorius for its дураки и дороги - its idiots and its roads. Examing the ROADACCIDENT variable (number of accidents per 100,000 people), we can graph the mean accidents for each year across the Russian Federation.   
 
 My ShinyApp will (hopefully) allow users to select indicators and create these sorts of visualizations.   
 
@@ -49,7 +49,7 @@ ggplot(accident, aes(x = YEAR, y = mean_accident)) +
 
 *****
 
-In 2010 the top five regions with the highest accident rates are shown below. Lets see how their accident rates have or have not changed over time.  
+The five regions with the highest accident rates for 2010 are shown below. Lets see how their accident rates have or have not changed over time.  
 
 ```{r, warning=FALSE, echo=FALSE, error=FALSE, message=FALSE}
 top_5 <- r_4 %>%
@@ -76,4 +76,4 @@ ggplot(aes(x = YEAR, y = ROADACCIDENT, color = NAME)) +
        subtitle = "For regions with highest rates in 2010")
 ```
 
-This is messy and there is missing data, but this gives you an idea of what I'd like my users to be able to visualize. 
+This is messy and there is missing data, but this gives you an idea of what I'd like my users to be able to visualize with Shiny. 
