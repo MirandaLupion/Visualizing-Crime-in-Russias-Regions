@@ -1,8 +1,8 @@
 library(shiny)
 library(tidyverse)
+library(stringr)
 load("Regions4.rda")
 r_4 <- da35355.0004
-r_4$REGION <- str_trim(r_4$REGION)
 r_4$NAME <- str_trim(r_4$NAME)
 
 
@@ -22,7 +22,7 @@ ui <- fluidPage(
        
       selectizeInput(inputId = "region",
                           label = "Select regions", 
-                          choices = c(r_4$REGION),
+                          choices = c(r_4$NAME),
                           multiple = TRUE,
                           options = list(maxItems = 5))),
      mainPanel(
@@ -32,10 +32,12 @@ ui <- fluidPage(
 server <- function(input, output){
   regions_subset <- reactive({
     req(input$region)
-    filter(r_4, REGION %in% input$region)
+    filter(r_4, NAME %in% input$region)
   })
   output$scatterplot <- renderPlot({
-    ggplot(data = regions_subset(), aes_string(x = r_4$YEAR, y = input$y, color = input$region)) + geom_point() 
+    ggplot(data = regions_subset(), aes_string(x = regions_subset()$YEAR, y = input$y)) + 
+      geom_point(aes(color = regions_subset()$NAME)) +
+      labs(x = "Year")
   })}
 
 # Run the application 
