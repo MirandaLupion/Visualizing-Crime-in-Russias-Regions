@@ -17,7 +17,7 @@ ui <- fluidPage(
      sidebarPanel( 
        selectInput(inputId = "y", #internal label 
                    label = "Y-axis:", #label that user sees
-                   choices = c("Road accidents" = "ROADACCIDENT", "Crime share" = "CRIMESHARE"), #vector of choices for user to pick from 
+                   choices = c("Road accidents" = "ROADACCIDENT", "Crime share" = "CRIMESHARE", "Murders" = "MURDER"), #vector of choices for user to pick from 
                   selected = "ROADACCIDENT"),
        
       selectizeInput(inputId = "region",
@@ -37,7 +37,7 @@ server <- function(input, output){
   output$scatterplot <- renderPlot({
     ggplot(data = regions_subset(), aes_string(x = regions_subset()$YEAR, y = input$y)) + 
       geom_point(aes(color = regions_subset()$NAME)) +
-      labs(x = "Year")
+      labs(x = "Year", y = input$y)
   })}
 
 # Run the application 
