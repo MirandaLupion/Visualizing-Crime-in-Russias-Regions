@@ -4,10 +4,8 @@ library(stringr)
 library(rsconnect)
 library(leaflet)
 library(rgdal)
+data(crime)
 
-# Data preparation 
-
-crime <- read_rds("r_4_tidy.rds")
 
 # Leaflet preparation
 rf_map <- readOGR(dsn = "/Users/MLupion/Desktop/GOV 1005/GOV_1005_Final_Project/RUS_adm", layer = "RUS_adm1")
@@ -31,10 +29,10 @@ ui <- fluidPage(
                   selected = "ROADACCIDENT"),
      
       # for the map
-      selectInput(inputId = "year", #internal label 
-                   label = "Year to map", #label that user sees
-                   choices = c(crime$YEAR), #vector of choices for user to pick from 
-                   selected = "1990"),
+      #selectInput(inputId = "year", #internal label 
+                   #label = "Year to map", #label that user sees
+                   #choices = c(crime$YEAR), #vector of choices for user to pick from 
+                   #selected = "1990"),
        
         # Select regions 
       selectizeInput(inputId = "region", #internal label
@@ -62,11 +60,12 @@ server <- function(input, output){
       labs(x = "Year", y = input$y) +
       scale_color_discrete(name = "Regions")
     
-  output$map <- renderLeaflet({
-    leaflet() %>%
-      addProviderTiles(provider = "CartoDB") %>%
-      addPolygons(data = rf_map)
-  })  
+  #output$map <- renderLeaflet({
+    #leaflet() %>%
+      #addProviderTiles(provider = "CartoDB") %>%
+      #addPolygons(data = rf_map)
+    #something with year and variable here
+  #})  
   })}
 
 # Run the application 

@@ -7,7 +7,6 @@ output: html_document
 
 ```{r setup, echo = FALSE, warning = FALSE, message = FALSE, error = FALSE}
 knitr::opts_chunk$set(echo = FALSE)
-
 library(leaflet)
 library(tidyverse)
 library(rgdal)
@@ -24,14 +23,14 @@ domain <- rf_map@data %>%
   filter(YEAR == "1990") %>%
   select(CRIMESHARE)
 
-color <- colorNumeric(palette = "Blues",domain = domain)
+coloring <- colorNumeric(palette = "Blues",domain = domain)
 
 leaflet() %>%
   addProviderTiles(provider = "CartoDB") %>%
   addPolygons(weight = 1, 
               data = rf_map, 
-              label = NAME,
-              color = ~color(CRIMESHARE))
+              #label = NAME,
+              color = ~coloring(CRIMESHARE))
 
 ```
 
