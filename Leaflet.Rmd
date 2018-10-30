@@ -34,7 +34,7 @@ rf_map %>%
   leaflet() %>%
   addProviderTiles(provider = "CartoDB") %>%
   addPolygons(weight = 1, 
-              #label = NAME,
+              label = ~paste0(NAME, ", ", CRIMESHARE),
               color = ~coloring(CRIMESHARE))
 ```
 
