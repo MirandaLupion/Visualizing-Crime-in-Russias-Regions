@@ -25,7 +25,7 @@ ui <- fluidPage(
    sidebarLayout( 
      sidebarPanel( 
        # Y axis variable for the chart and for the map
-       h3("Select the plot inputs"),
+       h3("Select the inputs"),
        selectInput(inputId = "year", #internal label 
                    label = "Year to map", #label that user sees
                    choices = c(crime_map$YEAR), #vector of choices for user to pick from 
@@ -45,9 +45,12 @@ ui <- fluidPage(
                       options = list(maxItems = 5))), #can choose up to five
      # Outputs 
      mainPanel(
+       h3("Plot indicators over time"),
        plotOutput(outputId = "scatterplot"),
+       h3("Map an indicator for a given year"),
        leafletOutput("map", width = "75%", height = "500px"),
-       p("Source - Inter-university Consortium for Political and Social Research (ICPSR):"),  
+       h3("Source"),
+       p("Inter-university Consortium for Political and Social Research (ICPSR):"),  
        p("ICPSR 35355 Aggregate Data, Regions of Russia (RoR), 1990 - 2010, created by Irina Mirkina."),
        tags$a(href = "https://www.icpsr.umich.edu/icpsrweb/ICPSR/studies/35355", "Click here to learn more about the data."))))
 
@@ -59,7 +62,7 @@ server <- function(input, output){
   
   map_subset <- reactive({
     req(input$year)
-    filter(crime_map, YEAR == input$year)
+    filter(crime_map, YEAR == input$year) 
     
   })
 
@@ -72,16 +75,18 @@ server <- function(input, output){
   output$map <- renderLeaflet({
     rf_map <- merge(rf_map, map_subset(), by = "ID_1", duplicateGeoms = TRUE)
     coloring <- colorNumeric(palette = "Blues",
-                             domain = rf_map@data$CRIMESHARE)
+                             domain = rf_map@data$input$y)
     m <- rf_map %>%
       leaflet(options = leafletOptions(dragging = TRUE)) %>%
       addProviderTiles(provider = "CartoDB") %>%
       setView(lng = 37.618423, lat = 55.751244, zoom = 3) %>%
       setMaxBounds(lng1 = 40, lat1 = 30, lng2 = 150, lat2 = 100) %>%
       addPolygons(weight = 1, 
-                  label = ~paste0(NAME, ", ", CRIMESHARE),
-                  color = ~coloring(CRIMESHARE)) %>%
-      addLegend("bottomright", pal = coloring, values = ~CRIMESHARE,
+                  label = ~paste0(NAME, ", ", input$y),
+                  color = ~coloring(input$y)) %>%
+      addLegend("bottomright", 
+                pal = coloring, 
+                values = ~input$y,
                 title = "title here",
                 opacity = 1)
     m
