@@ -31,8 +31,10 @@ coloring <- colorNumeric(palette = "Blues",
 
 ```{r leaflet code}
 rf_map %>%
-  leaflet() %>%
+  leaflet(options = leafletOptions(dragging = TRUE)) %>%
   addProviderTiles(provider = "CartoDB") %>%
+  fitBounds(lng1 = 45, lat1 = 80, lng2 = 160, lat2 = 30) %>%
+  setMaxBounds(lng1 = 45, lat1 = 80, lng2 = 160, lat2 = 30) %>%
   addPolygons(weight = 1, 
               label = ~paste0(NAME, ", ", CRIMESHARE),
               color = ~coloring(CRIMESHARE))
