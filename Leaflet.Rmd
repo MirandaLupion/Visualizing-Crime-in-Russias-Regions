@@ -11,9 +11,9 @@ knitr::opts_chunk$set(echo = FALSE)
 library(leaflet)
 library(tidyverse)
 library(rgdal)
-crime <- read_rds("r_4_tidy.rds")
+crime_1 <- read_rds("r_4_tidy.rds")
 
-crime <- crime %>%
+crime_1 <- crime_1 %>%
   filter(YEAR == 2000)
 
 
@@ -21,7 +21,7 @@ rf_map <- readOGR(dsn = "/Users/MLupion/Desktop/GOV 1005/GOV_1005_Final_Project/
 
 rf_map <- spTransform(rf_map, CRS("+init=epsg:4326"))
 
-rf_map <- merge(rf_map, crime, by = "ID_1", duplicateGeoms = TRUE)
+rf_map <- merge(rf_map, crime_1, by = "ID_1", duplicateGeoms = TRUE)
 
 coloring <- colorNumeric(palette = "Blues",
                          domain = rf_map@data$CRIMESHARE)
@@ -30,6 +30,11 @@ coloring <- colorNumeric(palette = "Blues",
 
 
 ```{r leaflet code}
+library(tidyverse)
+library(rgdal)
+library(leaflet)
+
+
 rf_map %>%
   leaflet(options = leafletOptions(dragging = TRUE)) %>%
   addProviderTiles(provider = "CartoDB") %>%
