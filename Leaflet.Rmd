@@ -5,12 +5,16 @@ date: "10/16/2018"
 output: html_document
 ---
 
-```{r setup, echo = FALSE, warning = FALSE, message = FALSE, error = FALSE}
+
+```{r setup, echo = FALSE, warning = FALSE, message = FALSE, error = FALSE, cache = TRUE}
 knitr::opts_chunk$set(echo = FALSE)
 library(leaflet)
 library(tidyverse)
 library(rgdal)
-data(crime)
+crime <- read_rds("r_4_tidy.rds")
+
+crime <- crime %>%
+  filter(YEAR == 2000)
 
 
 rf_map <- readOGR(dsn = "/Users/MLupion/Desktop/GOV 1005/GOV_1005_Final_Project/RUS_adm", layer = "RUS_adm1")
@@ -19,23 +23,19 @@ rf_map <- spTransform(rf_map, CRS("+init=epsg:4326"))
 
 rf_map <- merge(rf_map, crime, by = "ID_1", duplicateGeoms = TRUE)
 
-domain <- rf_map@data %>%
-  filter(YEAR == "1990") %>%
-  select(CRIMESHARE)
-
-coloring <- colorNumeric(palette = "Blues",domain = domain)
-
-leaflet() %>%
-  addProviderTiles(provider = "CartoDB") %>%
-  addPolygons(weight = 1, 
-              data = rf_map, 
-              #label = NAME,
-              color = ~coloring(CRIMESHARE))
+coloring <- colorNumeric(palette = "Blues",
+                         domain = rf_map@data$CRIMESHARE)
 
 ```
 
 
-
-```{r}
+```{r leaflet code}
+rf_map %>%
+  leaflet() %>%
+  addProviderTiles(provider = "CartoDB") %>%
+  addPolygons(weight = 1, 
+              #label = NAME,
+              color = ~coloring(CRIMESHARE))
+```
 
 
