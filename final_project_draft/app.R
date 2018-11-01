@@ -4,6 +4,8 @@ library(stringr)
 library(rsconnect)
 library(leaflet)
 library(rgdal)
+library(shinythemes)
+library(plotly)
 data(crime_master)
 
 # Prepare two data sets
@@ -17,7 +19,7 @@ rf_map <- spTransform(rf_map, CRS("+init=epsg:4326"))
 
 
 # Define UI for application that draws a graph
-ui <- fluidPage(
+ui <- fluidPage(theme = shinytheme("cerulean"),
    
    # Application title
    titlePanel("Crime in the Russian Regions, 1990 - 2010"),
@@ -46,9 +48,9 @@ ui <- fluidPage(
      # Outputs 
      mainPanel(
        h3("Plot indicators over time"),
-       plotOutput(outputId = "scatterplot"),
+       plotlyOutput(outputId = "scatterplot"),
        h3("Map an indicator for a given year"),
-       leafletOutput("map", width = "75%", height = "500px"),
+       leafletOutput("map", width = "100%", height = "500px"),
        h3("Source"),
        p("Inter-university Consortium for Political and Social Research (ICPSR):"),  
        p("ICPSR 35355 Aggregate Data, Regions of Russia (RoR), 1990 - 2010, created by Irina Mirkina."),
@@ -66,32 +68,37 @@ server <- function(input, output){
     
   })
 
-  output$scatterplot <- renderPlot({
-  print(ggplot(data = regions_subset(), aes_string(x = regions_subset()$YEAR, y = input$y)) + #plot year on x and value on y
+  output$scatterplot <- renderPlotly({
+  ggplotly(ggplot(data = regions_subset(), aes_string(x = regions_subset()$YEAR, y = input$y)) + #plot year on x and value on y
       geom_point(aes(color = regions_subset()$NAME)) + #color by region
       labs(x = "Year", y = input$y) +
-      scale_color_discrete(name = "Regions"))
+      scale_color_discrete(name = "Regions")) })
     
   output$map <- renderLeaflet({
     rf_map <- merge(rf_map, map_subset(), by = "ID_1", duplicateGeoms = TRUE)
     coloring <- colorNumeric(palette = "Blues",
-                             domain = rf_map@data$input$y)
+                             domain = rf_map@data$CRIMESHARE)
     m <- rf_map %>%
       leaflet(options = leafletOptions(dragging = TRUE)) %>%
       addProviderTiles(provider = "CartoDB") %>%
       setView(lng = 37.618423, lat = 55.751244, zoom = 3) %>%
       setMaxBounds(lng1 = 40, lat1 = 30, lng2 = 150, lat2 = 100) %>%
       addPolygons(weight = 1, 
-                  label = ~paste0(NAME, ", ", input$y),
-                  color = ~coloring(input$y)) %>%
+                  label = ~paste0(NAME, ", ", CRIMESHARE),
+                  color = ~coloring(CRIMESHARE)) %>%
       addLegend("bottomright", 
                 pal = coloring, 
-                values = ~input$y,
+                values = ~CRIMESHARE,
                 title = "title here",
                 opacity = 1)
     m
-  })  
-  })}
+  })
+  
+  output$event <- renderPrint({
+    d <- event_data("plotly_hover")
+    if (is.null(d)) "Hover on a point!" else d
+  })
+  }
 
 # Run the application 
 shinyApp(ui = ui, server = server)
