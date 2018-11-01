@@ -69,8 +69,8 @@ server <- function(input, output){
   })
 
   output$scatterplot <- renderPlotly({
-  ggplotly(ggplot(data = regions_subset(), aes_string(x = regions_subset()$YEAR, y = input$y)) + #plot year on x and value on y
-      geom_point(aes(color = regions_subset()$NAME)) + #color by region
+  ggplotly(ggplot(data = regions_subset(), aes_string(x = "YEAR", y = input$y, color = "NAME")) + #plot year on x and value on y
+      geom_point() + #color by region
       labs(x = "Year", y = input$y) +
       scale_color_discrete(name = "Regions")) })
     
