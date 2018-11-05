@@ -1,0 +1,12 @@
+name: final_project_draft
+title: final_project_draft
+username:
+account: mlupion
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 541775
+bundleId: 1670958
+url: https://mlupion.shinyapps.io/final_project_draft/
+when: 1540855968.49838
+asMultiple: FALSE
+asStatic: FALSE

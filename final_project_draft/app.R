@@ -13,10 +13,14 @@ crime_plot <- crime_master
 crime_map <- crime_master %>%
   mutate(YEAR = as.character(YEAR))
 
+
 # Prepare shape file
 rf_map <- readOGR(dsn = "/Users/MLupion/Desktop/GOV 1005/GOV_1005_Final_Project/RUS_adm", layer = "RUS_adm1")
 rf_map <- spTransform(rf_map, CRS("+init=epsg:4326"))
 
+crime_options <- c("Road accidents" = "ROADACCIDENT", 
+                   "Crime share" = "CRIMESHARE", 
+                   "Murders" = "MURDER") 
 
 # Define UI for application that draws a graph
 ui <- fluidPage(theme = shinytheme("cerulean"),
@@ -35,10 +39,8 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
        
        selectInput(inputId = "y", #internal label 
                    label = "Indicator to display on Y-axis", #label that user sees
-                   choices = c("Road accidents" = "ROADACCIDENT", 
-                               "Crime share" = "CRIMESHARE", 
-                               "Murders" = "MURDER"), #vector of choices for user to pick from 
-                  selected = "ROADACCIDENT"),
+                   choices = crime_options, #vector of choices for user to pick from 
+                  selected = crime_options[1]),
        
        selectizeInput(inputId = "region", #internal label
                       label = "Select regions", #label that user sees
@@ -65,13 +67,17 @@ server <- function(input, output){
   map_subset <- reactive({
     req(input$year)
     filter(crime_map, YEAR == input$year) 
+
     
   })
 
   output$scatterplot <- renderPlotly({
+    varnames <- c("Road accidents", "Crime share", "Murders")
   ggplotly(ggplot(data = regions_subset(), aes_string(x = "YEAR", y = input$y, color = "NAME")) + #plot year on x and value on y
       geom_point() + #color by region
-      labs(x = "Year", y = input$y) +
+      labs(x = "Year", y = names(crime_options[which(crime_options == input$y)])) +
+      theme(text = element_text(size = 10), 
+            axis.text.y = element_text(angle = 90, hjust = 1)) +
       scale_color_discrete(name = "Regions")) })
     
   output$map <- renderLeaflet({
