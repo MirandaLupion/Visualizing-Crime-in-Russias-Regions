@@ -96,3 +96,4 @@ r_4$ID_1[1702:1722] <- 83
 r_4 %>%
 write_rds("r_4_tidy.rds")
 crime_master <- read_rds("r_4_tidy.rds")
+
