@@ -6,7 +6,7 @@ library(leaflet)
 library(rgdal)
 library(shinythemes)
 library(plotly)
-data(crime_master)
+crime_master <- read_rds("r_4_tidy.rds")
 
 # Prepare two data sets
 crime_plot <- crime_master
@@ -49,14 +49,13 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                       options = list(maxItems = 5))), #can choose up to five
      # Outputs 
      mainPanel(
-       h3("Plot indicators over time"),
-       plotlyOutput(outputId = "scatterplot"),
-       h3("Map an indicator for a given year"),
-       leafletOutput("map", width = "100%", height = "500px"),
-       h3("Source"),
-       p("Inter-university Consortium for Political and Social Research (ICPSR):"),  
-       p("ICPSR 35355 Aggregate Data, Regions of Russia (RoR), 1990 - 2010, created by Irina Mirkina."),
-       tags$a(href = "https://www.icpsr.umich.edu/icpsrweb/ICPSR/studies/35355", "Click here to learn more about the data."))))
+       tabsetPanel(type = "tabs",
+                   tabPanel("About this app", htmlOutput("about")),
+                   tabPanel("Plot the indicators", plotlyOutput("scatterplot")),
+                   tabPanel("Map an indicator", leafletOutput("map", width = "100%", height = "500px")))
+       
+     )))
+       
 
 # Server
 server <- function(input, output){
@@ -100,10 +99,14 @@ server <- function(input, output){
     m
   })
   
-  output$event <- renderPrint({
-    d <- event_data("plotly_hover")
-    if (is.null(d)) "Hover on a point!" else d
+  output$about <- renderUI({
+    HTML(paste(
+      h3("Source"), 
+      p("Inter-university Consortium for Political and Social Research (ICPSR):"),  
+      p("ICPSR 35355 Aggregate Data, Regions of Russia (RoR), 1990 - 2010, created by Irina Mirkina."),
+      tags$a(href = "https://www.icpsr.umich.edu/icpsrweb/ICPSR/studies/35355", "Click here to learn more about the data.")))
   })
+  
   }
 
 # Run the application 
