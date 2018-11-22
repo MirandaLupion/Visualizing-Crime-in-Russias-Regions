@@ -1,2 +1,2 @@
 # GOV_1005_Final_Project
-Precis for GOV 1005 final project
+This is my final project for GOV 1005 at Harvard. The Shiny App visualizes data about crimes in the Russian Federation's federal subjects (administrative units) from 1990 through 2010. 
