@@ -25,10 +25,10 @@ crime_map <- crime_master %>%
 # Read it in
 # Project the shape file 
 
-rf_map <- readOGR(dsn = "/Users/MLupion/Desktop/GOV 1005/GOV_1005_Final_Project/RUS_adm", layer = "RUS_adm1")
+rf_map <- readOGR(dsn = "RUS_adm", layer = "RUS_adm1")
 rf_map <- spTransform(rf_map, CRS("+init=epsg:4326"))
 
-
+#absolute path "/Users/MLupion/Desktop/GOV 1005/GOV_1005_Final_Project/RUS_adm"
 # Create nice labels for the user-selected variables
 
 crime_options <- c("Road accidents" = "ROADACCIDENT", 
