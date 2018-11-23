@@ -43,11 +43,10 @@ crime_options <- c("Road accidents" = "ROADACCIDENT",
 
 # Define UI for application with a nice theme
 
-ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("cerulean"),
+ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("united"),
                 tabPanel("About",
                          fluidRow(
-                           column(1, br()),
-                           column(11,
+                           column(12,
                               wellPanel(
                              htmlOutput("about"))))),
                  
@@ -55,7 +54,7 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("cerulean"),
                           sidebarLayout( 
                             sidebarPanel( 
                               selectInput(inputId = "y", # internal label 
-                                                      label = "Indicator to visualize", # label that user sees
+                                                      label = "Indicator to display on the y-axis", # label that user sees
                                                       choices = crime_options, # vector of choices for user to pick from 
                                                       selected = crime_options[3]),
                                           
@@ -82,7 +81,7 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("cerulean"),
                                            selected = "1990"),
                                
                                selectInput(inputId = "y", # internal label 
-                                           label = "Indicator to display on Y-axis", # label that user sees
+                                           label = "Indicator to map", # label that user sees
                                            choices = crime_options, # vector of choices for user to pick from 
                                            selected = crime_options[3])),
                              
