@@ -156,7 +156,8 @@ server <- function(input, output){
                     title = paste0(names(crime_options[which(crime_options == input$y)]), " from 1990 to 2010 ")) +
                theme(text = element_text(size = 10), 
                      axis.text.y = element_text(angle = 90, hjust = 1)) +
-               scale_color_discrete(name = "Regions")) })
+               scale_color_discrete(name = "Regions")) %>% 
+               config(displayModeBar = FALSE) })
   
   
   # Map output
@@ -171,9 +172,7 @@ server <- function(input, output){
   # Color by the coloring set up
   
   output$map <- renderLeaflet({
-    
-    map_var <- input$y
-    
+
     rf_map <- merge(rf_map, map_subset(), by = "ID_1", duplicateGeoms = TRUE)
     coloring <- colorNumeric(palette = "Blues",
                              domain = rf_map@data$CRIMESHARE)
@@ -191,7 +190,7 @@ server <- function(input, output){
       addLegend("bottomright", 
                 pal = coloring, 
                 values = ~CRIMESHARE,
-                title = names(crime_options[which(crime_options == input$y)]),
+                title = names(crime_options[which(crime_options == input$map_var)]),
                 opacity = 1)
     m
   })
@@ -203,7 +202,7 @@ server <- function(input, output){
   HTML(paste("* Where ",
              str_to_lower(names(crime_options[which(crime_options == input$y)])),
              " is ",
-            names(crime_definitions [which(crime_definitions == input$y)])))  
+            names(crime_definitions[which(crime_definitions == input$y)])))  
     
   })
   
