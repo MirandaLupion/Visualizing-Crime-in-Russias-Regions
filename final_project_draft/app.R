@@ -1,3 +1,5 @@
+# Load libraries 
+
 library(shiny)
 library(tidyverse)
 library(stringr)
@@ -6,49 +8,85 @@ library(leaflet)
 library(rgdal)
 library(shinythemes)
 library(plotly)
+
+# Read in the data
+
 crime_master <- read_rds("r_4_tidy.rds")
 
-# Prepare two data sets
+# Prepare two data sets 
+# one for the plot and one for the map 
+
 crime_plot <- crime_master
 crime_map <- crime_master %>%
   mutate(YEAR = as.character(YEAR))
 
 
-# Prepare shape file
+# Prepare the shape file for the map 
+# Read it in
+# Project the shape file 
+
 rf_map <- readOGR(dsn = "/Users/MLupion/Desktop/GOV 1005/GOV_1005_Final_Project/RUS_adm", layer = "RUS_adm1")
 rf_map <- spTransform(rf_map, CRS("+init=epsg:4326"))
 
-crime_options <- c("Road accidents" = "ROADACCIDENT", 
-                   "Crime share" = "CRIMESHARE", 
-                   "Murders" = "MURDER") 
 
-# Define UI for application that draws a graph
+# Create nice labels for the user-selected variables
+
+crime_options <- c("Road accidents" = "ROADACCIDENT", 
+                   "Victims of road accidents" = "ROADVICTIM",
+                   "Crime share" = "CRIMESHARE", 
+                   "Murders" = "MURDER",
+                   "Incidences of rape" = "RAPE",
+                   "Robberies" = "ROBBERY",
+                   "Incidences of hooliganism" = "HOOLIGANISM",
+                   "White-collar crimes" = "ECONCRIME",
+                   "Incidences of juvenile crime" = "JUVENILECRIME") 
+
+# Define UI for application with a nice theme
+
 ui <- fluidPage(theme = shinytheme("cerulean"),
    
    # Application title
+   
    titlePanel("Crime in the Russian Regions, 1990 - 2010"),
+   
+   # Sidebar layour
    
    sidebarLayout( 
      sidebarPanel( 
-       # Y axis variable for the chart and for the map
+       
        h3("Select the inputs"),
+       
+       # Let users select the year to map
+       
        selectInput(inputId = "year", #internal label 
                    label = "Year to map", #label that user sees
                    choices = c(crime_map$YEAR), #vector of choices for user to pick from 
                    selected = "1990"),
        
-       selectInput(inputId = "y", #internal label 
-                   label = "Indicator to display on Y-axis", #label that user sees
-                   choices = crime_options, #vector of choices for user to pick from 
-                  selected = crime_options[1]),
+       # Let users select the indicator to plot
        
-       selectizeInput(inputId = "region", #internal label
-                      label = "Select regions", #label that user sees
-                      choices = c(crime_plot$NAME), #choose from this list 
+       selectInput(inputId = "y", # internal label 
+                   label = "Indicator to display on Y-axis", # label that user sees
+                   choices = crime_options, # vector of choices for user to pick from 
+                  selected = crime_options[3]),
+       
+       # Let users select the regions to plot
+       
+       selectizeInput(inputId = "region", # internal label
+                      label = "Select regions", # label that user sees
+                      choices = c(crime_plot$NAME), # choose from this list 
                       multiple = TRUE, # can choose multiple 
-                      options = list(maxItems = 5))), #can choose up to five
-     # Outputs 
+                      options = list(maxItems = 5), # can choose up to five
+                      selected = "Moscow")), 
+     # Outputs
+     
      mainPanel(
+       
+       # Use a tabset structure with three tabs
+       # one for the info about the app
+       # another for the plotly output
+       # and another for the map leaflet output
+       
        tabsetPanel(type = "tabs",
                    tabPanel("About this app", htmlOutput("about")),
                    tabPanel("Plot the indicators", plotlyOutput("scatterplot")),
@@ -58,10 +96,17 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
        
 
 # Server
+
 server <- function(input, output){
-  regions_subset <- reactive({ #make the regions included in the data set only the ones that the user chose 
+  
+  # Reactive that subsets the regions to plot
+  # by filtering the crime_plot data for the user inputed regions
+  
+  regions_subset <- reactive({ 
     req(input$region)
     filter(crime_plot, NAME %in% input$region)})
+  
+  # Reactive that filters the crime_map data for the user-selected year
   
   map_subset <- reactive({
     req(input$year)
@@ -70,16 +115,34 @@ server <- function(input, output){
     
   })
 
+  
+  # Scatterplot output 
+  # Wrap ggplot in ggplotly wrapper
+  
   output$scatterplot <- renderPlotly({
-    varnames <- c("Road accidents", "Crime share", "Murders")
   ggplotly(ggplot(data = regions_subset(), aes_string(x = "YEAR", y = input$y, color = "NAME")) + #plot year on x and value on y
       geom_point() + #color by region
       labs(x = "Year", y = names(crime_options[which(crime_options == input$y)])) +
       theme(text = element_text(size = 10), 
             axis.text.y = element_text(angle = 90, hjust = 1)) +
       scale_color_discrete(name = "Regions")) })
+  
+  
+  # Map output
+  # Merge the shapefile with the sub_setted map data
+  # Color by the selected indicator 
+  # Set the options for the leaflet viewer 
+  # Allow the user to drag
+  # Add a CartoDB base map
+  # Set the default view
+  # Set the max bounds
+  # Add the shapefile with labels
+  # Color by the coloring set up
     
   output$map <- renderLeaflet({
+    
+    map_var <- input$y
+    
     rf_map <- merge(rf_map, map_subset(), by = "ID_1", duplicateGeoms = TRUE)
     coloring <- colorNumeric(palette = "Blues",
                              domain = rf_map@data$CRIMESHARE)
@@ -91,16 +154,21 @@ server <- function(input, output){
       addPolygons(weight = 1, 
                   label = ~paste0(NAME, ", ", CRIMESHARE),
                   color = ~coloring(CRIMESHARE)) %>%
+      
+      # Add a legend in the bottom
+      
       addLegend("bottomright", 
                 pal = coloring, 
                 values = ~CRIMESHARE,
-                title = "title here",
+                title = names(crime_options[which(crime_options == input$y)]),
                 opacity = 1)
     m
   })
   
   output$about <- renderUI({
     HTML(paste(
+      h3("Summary"),
+      p("This application allows users to visualize crime data for the Russian Federation's federal subjects (administrative units) from 1990 through 2010."),
       h3("Source"), 
       p("Inter-university Consortium for Political and Social Research (ICPSR):"),  
       p("ICPSR 35355 Aggregate Data, Regions of Russia (RoR), 1990 - 2010, created by Irina Mirkina."),
