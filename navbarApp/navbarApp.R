@@ -42,48 +42,71 @@ crime_options <- c("Road accidents" = "ROADACCIDENT",
                    "Incidences of juvenile crime" = "JUVENILECRIME") 
 
 # Define UI for application with a nice theme
+# Use a navBar structure
 
-ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("united"),
-                tabPanel("About",
+ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
+                
+                  # First tabPanel gives about information and so the formatting is fluidRow
+                 
+                 tabPanel("About",
                          fluidRow(
                            column(12,
                               wellPanel(
                              htmlOutput("about"))))),
                  
+                 # Second tab panel holds the plot
+                 # Uses a sidebarLayout 
+                 
                  tabPanel("Plot the indicators",
                           sidebarLayout( 
-                            sidebarPanel( 
+                            sidebarPanel(
+                              
+                              # Allows the user to select the indicator to display 
+                              
                               selectInput(inputId = "y", # internal label 
-                                                      label = "Indicator to display on the y-axis", # label that user sees
+                                                      label = "Select an indicator to display on the y-axis", # label that user sees
                                                       choices = crime_options, # vector of choices for user to pick from 
                                                       selected = crime_options[3]),
                                           
-                                          # Let users select the regions to plot
+                              # Let users select the regions to plot
                                           
                               selectizeInput(inputId = "region", # internal label
-                                                        label = "Select regions", # label that user sees
+                                                        label = "Select up to five regions", # label that user sees
                                                          choices = c(crime_plot$NAME), # choose from this list 
                                                          multiple = TRUE, # can choose multiple 
                                                          options = list(maxItems = 5), # can choose up to five
                                                          selected = "Moscow")), 
+                            # Plot output
                             
                             mainPanel(
-                              plotlyOutput("scatterplot")))),
+                              wellPanel(p("Select the variable to plot on the y-axis and up to five regions.")),
+                              br(),
+                              plotlyOutput("scatterplot")
+                              ))),
                   
 
-
+                  # Third tabPanel holds the map
+                  # Uses a sidebarLayout 
+                 
                   tabPanel("Map the indicators",
                            sidebarLayout( 
                              sidebarPanel( 
+                               
+                               # Allows the user to select the year to map
+                               
                                selectInput(inputId = "year", #internal label 
                                            label = "Year to map", #label that user sees
                                            choices = c(crime_map$YEAR), #vector of choices for user to pick from 
                                            selected = "1990"),
                                
-                               selectInput(inputId = "y", # internal label 
+                               # Allows the user to select the indicator to map
+                               
+                               selectInput(inputId = "map_var", # internal label 
                                            label = "Indicator to map", # label that user sees
                                            choices = crime_options, # vector of choices for user to pick from 
                                            selected = crime_options[3])),
+                            
+                            # Holds the map object
                              
                              mainPanel(
                                leafletOutput("map", width = "100%", height = "500px")))))
@@ -115,7 +138,9 @@ server <- function(input, output){
   output$scatterplot <- renderPlotly({
     ggplotly(ggplot(data = regions_subset(), aes_string(x = "YEAR", y = input$y, color = "NAME")) + #plot year on x and value on y
                geom_point() + #color by region
-               labs(x = "Year", y = names(crime_options[which(crime_options == input$y)])) +
+               labs(x = "Year", 
+                    y = names(crime_options[which(crime_options == input$y)]),
+                    title = paste0(names(crime_options[which(crime_options == input$y)]), " from 1990 to 2010 ")) +
                theme(text = element_text(size = 10), 
                      axis.text.y = element_text(angle = 90, hjust = 1)) +
                scale_color_discrete(name = "Regions")) })
@@ -157,6 +182,8 @@ server <- function(input, output){
                 opacity = 1)
     m
   })
+  
+  # Create the text element to explain the app
   
   output$about <- renderUI({
     HTML(paste(
