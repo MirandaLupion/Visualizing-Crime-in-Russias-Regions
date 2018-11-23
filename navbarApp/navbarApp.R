@@ -41,6 +41,18 @@ crime_options <- c("Road accidents" = "ROADACCIDENT",
                    "White-collar crimes" = "ECONCRIME",
                    "Incidences of juvenile crime" = "JUVENILECRIME") 
 
+# Create a vector of definitions for these variables
+
+crime_definitions <- c("the number of road accidents per 100,000 persons" = "ROADACCIDENT", 
+                   "the number of road accident victims per 100,000 persons" = "ROADVICTIM",
+                   "the number of registered crimes per 100,000 persons" = "CRIMESHARE", 
+                   "the number of murders and murder attempts" = "MURDER",
+                   "the number of reported rapes" = "RAPE",
+                   "the number of reported robberies" = "ROBBERY",
+                   "the number of reported acts of hooliganism" = "HOOLIGANISM",
+                   "the number of reported white-collar crimes" = "ECONCRIME",
+                   "the number of reported juvenile crimes" = "JUVENILECRIME") 
+
 # Define UI for application with a nice theme
 # Use a navBar structure
 
@@ -64,12 +76,12 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                               # Allows the user to select the indicator to display 
                               
                               selectInput(inputId = "y", # internal label 
-                                                      label = "Select an indicator to display on the y-axis", # label that user sees
+                                                      label = "Select an indicator* to display on the y-axis", # label that user sees
                                                       choices = crime_options, # vector of choices for user to pick from 
                                                       selected = crime_options[3]),
                                           
                               # Let users select the regions to plot
-                                          
+          
                               selectizeInput(inputId = "region", # internal label
                                                         label = "Select up to five regions", # label that user sees
                                                          choices = c(crime_plot$NAME), # choose from this list 
@@ -79,9 +91,9 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                             # Plot output
                             
                             mainPanel(
-                              wellPanel(p("Select the variable to plot on the y-axis and up to five regions.")),
+                              plotlyOutput("scatterplot"),
                               br(),
-                              plotlyOutput("scatterplot")
+                              htmlOutput("define_variables_y")
                               ))),
                   
 
@@ -109,7 +121,9 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                             # Holds the map object
                              
                              mainPanel(
-                               leafletOutput("map", width = "100%", height = "500px")))))
+                               leafletOutput("map", width = "100%", height = "500px"),
+                               br(),
+                               htmlOutput("define_variables_map")))))
 
 # Server
 
@@ -131,13 +145,12 @@ server <- function(input, output){
     
   })
   
-  
   # Scatterplot output 
   # Wrap ggplot in ggplotly wrapper
   
   output$scatterplot <- renderPlotly({
     ggplotly(ggplot(data = regions_subset(), aes_string(x = "YEAR", y = input$y, color = "NAME")) + #plot year on x and value on y
-               geom_point() + #color by region
+               geom_point(alpha = 0.8) + #color by region
                labs(x = "Year", 
                     y = names(crime_options[which(crime_options == input$y)]),
                     title = paste0(names(crime_options[which(crime_options == input$y)]), " from 1990 to 2010 ")) +
@@ -182,6 +195,30 @@ server <- function(input, output){
                 opacity = 1)
     m
   })
+  
+  
+  # Create a variable descriptor for the plot
+  
+  output$define_variables_y <- renderUI({
+  HTML(paste("* Where ",
+             str_to_lower(names(crime_options[which(crime_options == input$y)])),
+             " is ",
+            names(crime_definitions [which(crime_definitions == input$y)])))  
+    
+  })
+  
+  # Create a variable descriptor for the map
+  
+  
+  output$define_variables_map <- renderUI({
+    HTML(paste("* Where ", 
+               str_to_lower(names(crime_options[which(crime_options == input$map_var)])),
+               " is ",
+               names(crime_definitions [which(crime_definitions == input$map_var)]))) 
+    
+  })
+  
+  
   
   # Create the text element to explain the app
   
