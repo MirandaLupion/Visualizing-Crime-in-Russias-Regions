@@ -149,8 +149,8 @@ server <- function(input, output){
     m <- rf_map %>%
       leaflet(options = leafletOptions(dragging = TRUE)) %>%
       addProviderTiles(provider = "CartoDB") %>%
-      setView(lng = 37.618423, lat = 55.751244, zoom = 3) %>%
-      setMaxBounds(lng1 = 40, lat1 = 30, lng2 = 150, lat2 = 100) %>%
+      fitBounds(lng1 = 40, lat1 = 30, lng2 = 150, lat2 = 100) %>%
+      setMaxBounds(lng1 = 20, lat1 = 30, lng2 = 170, lat2 = 100) %>%
       addPolygons(weight = 1, 
                   label = ~paste0(NAME, ", ", CRIMESHARE),
                   color = ~coloring(CRIMESHARE)) %>%
