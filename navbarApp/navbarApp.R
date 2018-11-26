@@ -1,13 +1,14 @@
 # Load libraries 
 
 library(shiny)
-library(tidyverse)
 library(stringr)
 library(rsconnect)
 library(leaflet)
 library(rgdal)
 library(shinythemes)
 library(plotly)
+library(tidyverse)
+
 
 # Read in the data 
 
@@ -139,8 +140,11 @@ server <- function(input, output){
   # Reactive that filters the crime_map data for the user-selected year
   
   map_subset <- reactive({
-    req(input$year)
-    filter(crime_map, YEAR == input$year) 
+    req(input$year, input$map_var)
+    crime_map %>%
+    filter(YEAR == input$year) %>%
+      select(ID_1, NAME, input$map_var) %>%
+      rename(selected_var = input$map_var)
     
     
   })
@@ -175,21 +179,21 @@ server <- function(input, output){
 
     rf_map <- merge(rf_map, map_subset(), by = "ID_1", duplicateGeoms = TRUE)
     coloring <- colorNumeric(palette = "Blues",
-                             domain = rf_map@data$CRIMESHARE)
+                             domain = rf_map@data$selected_var)
     m <- rf_map %>%
       leaflet(options = leafletOptions(dragging = TRUE)) %>%
       addProviderTiles(provider = "CartoDB") %>%
       fitBounds(lng1 = 40, lat1 = 30, lng2 = 150, lat2 = 100) %>%
       setMaxBounds(lng1 = 20, lat1 = 30, lng2 = 170, lat2 = 100) %>%
       addPolygons(weight = 1, 
-                  label = ~paste0(NAME, ", ", CRIMESHARE),
-                  color = ~coloring(CRIMESHARE)) %>%
+                  label = ~paste0(NAME, ", ", selected_var),
+                  color = ~coloring(selected_var)) %>%
       
       # Add a legend in the bottom
       
       addLegend("bottomright", 
                 pal = coloring, 
-                values = ~CRIMESHARE,
+                values = ~selected_var,
                 title = names(crime_options[which(crime_options == input$map_var)]),
                 opacity = 1)
     m
