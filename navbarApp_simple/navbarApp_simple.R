@@ -94,8 +94,7 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                             mainPanel(
                               plotlyOutput("scatterplot"),
                               br(),
-                              htmlOutput("define_variables_y")
-                              ))),
+                              htmlOutput("define_variables_y")))),
                   
 
                   # Third tabPanel holds the map
@@ -112,12 +111,13 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                                                       choices = c(crime_map$YEAR), #vector of choices for user to pick from 
                                                       selected = "1990")),  
                                         
-                                        
                                         # Holds the map object
                                         
-                                        mainPanel(leafletOutput("map_cs", width = "100%", height = "500px"),
-                                                               br(),
-                                                  p("Where crime share is the number of registered crimes per 100,000 persons")))))
+                                        mainPanel(
+                                          p("Please select a year for which to map the data and then wait for the map to load."),
+                                          leafletOutput("map_cs", width = "100%", height = "500px"),
+                                           br(),
+                                           p("Where crime share is the number of registered crimes per 100,000 persons")))))
                              
 
 
@@ -176,7 +176,7 @@ server <- function(input, output){
       fitBounds(lng1 = 40, lat1 = 30, lng2 = 150, lat2 = 100) %>%
       setMaxBounds(lng1 = 20, lat1 = 30, lng2 = 170, lat2 = 100) %>%
       addPolygons(weight = 1, 
-                  label = ~paste0(NAME, ", ", CRIMESHARE),
+                  label = ~paste0(NAME, ", Crime share: ", CRIMESHARE),
                   color = ~coloring(CRIMESHARE)) %>%
       
       # Add a legend in the bottom
