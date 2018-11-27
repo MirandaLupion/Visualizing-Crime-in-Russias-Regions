@@ -29,8 +29,7 @@ crime_map <- crime_master %>%
 rf_map <- readOGR(dsn = "RUS_adm", layer = "RUS_adm1")
 rf_map <- spTransform(rf_map, CRS("+init=epsg:4326"))
 
-#absolute path "/Users/MLupion/Desktop/GOV 1005/GOV_1005_Final_Project/RUS_adm"
-# Create nice labels for the user-selected variables
+# Create nice labels for the user-selected variables for the plot
 
 crime_options <- c("Road accidents" = "ROADACCIDENT", 
                    "Victims of road accidents" = "ROADVICTIM",
@@ -40,6 +39,14 @@ crime_options <- c("Road accidents" = "ROADACCIDENT",
                    "Robberies" = "ROBBERY",
                    "Incidences of hooliganism" = "HOOLIGANISM",
                    "White-collar crimes" = "ECONCRIME",
+                   "Incidences of juvenile crime" = "JUVENILECRIME") 
+
+# Create nice labels for the user-selected variables for the map
+
+crime_options_map <- c("Road accidents" = "ROADACCIDENT", 
+                   "Victims of road accidents" = "ROADVICTIM",
+                   "Crime share" = "CRIMESHARE", 
+                   "Murders" = "MURDER",
                    "Incidences of juvenile crime" = "JUVENILECRIME") 
 
 # Create a vector of definitions for these variables
@@ -116,12 +123,14 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                                
                                selectInput(inputId = "map_var", # internal label 
                                            label = "Indicator to map", # label that user sees
-                                           choices = crime_options, # vector of choices for user to pick from 
-                                           selected = crime_options[3])),
+                                           choices = crime_options_map, # vector of choices for user to pick from 
+                                           selected = crime_options_map[3])),
                             
                             # Holds the map object
                              
                              mainPanel(
+                               p("Please select a year and an indicator. Then allow for up to a minute for the map to load."),
+                               br(),
                                leafletOutput("map", width = "100%", height = "500px"),
                                br(),
                                htmlOutput("define_variables_map")))))
@@ -186,7 +195,8 @@ server <- function(input, output){
       fitBounds(lng1 = 40, lat1 = 30, lng2 = 150, lat2 = 100) %>%
       setMaxBounds(lng1 = 20, lat1 = 30, lng2 = 170, lat2 = 100) %>%
       addPolygons(weight = 1, 
-                  label = ~paste0(NAME, ", ", selected_var),
+                  label = ~paste0(NAME, ", ", 
+                                  names(crime_options_map[which(crime_options_map == input$map_var)]), ": ",  selected_var),
                   color = ~coloring(selected_var)) %>%
       
       # Add a legend in the bottom
@@ -194,7 +204,7 @@ server <- function(input, output){
       addLegend("bottomright", 
                 pal = coloring, 
                 values = ~selected_var,
-                title = names(crime_options[which(crime_options == input$map_var)]),
+                title = names(crime_options_map[which(crime_options_map == input$map_var)]),
                 opacity = 1)
     m
   })
@@ -215,7 +225,7 @@ server <- function(input, output){
   
   output$define_variables_map <- renderUI({
     HTML(paste("* Where ", 
-               str_to_lower(names(crime_options[which(crime_options == input$map_var)])),
+               str_to_lower(names(crime_options_map[which(crime_options_map == input$map_var)])),
                " is ",
                names(crime_definitions [which(crime_definitions == input$map_var)]))) 
     
