@@ -123,8 +123,10 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                                
                                selectInput(inputId = "map_var", # internal label 
                                            label = "Indicator to map", # label that user sees
-                                           choices = crime_options_map, # vector of choices for user to pick from 
-                                           selected = crime_options_map[3])),
+                                           choices = crime_options_map # vector of choices for user to pick from 
+                                           )),  
+                               
+                             
                             
                             # Holds the map object
                              
@@ -186,10 +188,10 @@ server <- function(input, output){
   
   output$map <- renderLeaflet({
 
-    rf_map <- merge(rf_map, map_subset(), by = "ID_1", duplicateGeoms = TRUE)
+   rf_map <- merge(rf_map, map_subset(), by = "ID_1", duplicateGeoms = TRUE)
     coloring <- colorNumeric(palette = "Blues",
                              domain = rf_map@data$selected_var)
-    m <- rf_map %>%
+  rf_map %>%
       leaflet(options = leafletOptions(dragging = TRUE)) %>%
       addProviderTiles(provider = "CartoDB") %>%
       fitBounds(lng1 = 40, lat1 = 30, lng2 = 150, lat2 = 100) %>%
@@ -205,8 +207,7 @@ server <- function(input, output){
                 pal = coloring, 
                 values = ~selected_var,
                 title = names(crime_options_map[which(crime_options_map == input$map_var)]),
-                opacity = 1)
-    m
+                opacity = 1) 
   })
   
   
