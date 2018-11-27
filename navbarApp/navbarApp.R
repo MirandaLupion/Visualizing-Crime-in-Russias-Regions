@@ -209,7 +209,6 @@ server <- function(input, output){
     
       crime_plot %>%
         filter(YEAR == input$year_table) %>%
-        dplyr::arrange(desc(input$table_indicator)) %>%
         select(NAME, input$table_indicator) %>% 
         kable("html", col.names = c("Region", "Indicator")) %>%
         kable_styling("striped", full_width = F)
