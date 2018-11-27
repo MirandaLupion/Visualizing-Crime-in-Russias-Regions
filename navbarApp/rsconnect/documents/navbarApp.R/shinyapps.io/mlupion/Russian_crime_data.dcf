@@ -5,8 +5,8 @@ account: mlupion
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 586078
-bundleId: 1722153
+bundleId: 1723811
 url: https://mlupion.shinyapps.io/Russian_crime_data/
-when: 1543280440.47745
+when: 1543339947.55793
 asMultiple: FALSE
 asStatic: FALSE

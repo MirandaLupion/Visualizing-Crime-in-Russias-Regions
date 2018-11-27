@@ -1,0 +1,12 @@
+name: Russian_Crime_Data_Simple
+title: Russian_Crime_Data_Simple
+username:
+account: mlupion
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 592308
+bundleId: 1723754
+url: https://mlupion.shinyapps.io/Russian_Crime_Data_Simple/
+when: 1543338577.00409
+asMultiple: FALSE
+asStatic: FALSE
