@@ -196,18 +196,18 @@ server <- function(input, output){
       addProviderTiles(provider = "CartoDB") %>%
       fitBounds(lng1 = 40, lat1 = 30, lng2 = 150, lat2 = 100) %>%
       setMaxBounds(lng1 = 20, lat1 = 30, lng2 = 170, lat2 = 100) %>%
-      addPolygons(weight = 1, 
-                  label = ~paste0(NAME, ", ", 
+      addPolygons(weight = 1,
+                  label = ~paste0(NAME, ", ",
                                   names(crime_options_map[which(crime_options_map == input$map_var)]), ": ",  selected_var),
                   color = ~coloring(selected_var)) %>%
-      
+
       # Add a legend in the bottom
-      
-      addLegend("bottomright", 
-                pal = coloring, 
+
+      addLegend("bottomright",
+                pal = coloring,
                 values = ~selected_var,
                 title = names(crime_options_map[which(crime_options_map == input$map_var)]),
-                opacity = 1) 
+                opacity = 1)
   })
   
   
