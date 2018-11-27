@@ -7,6 +7,8 @@ library(leaflet)
 library(rgdal)
 library(shinythemes)
 library(plotly)
+library(knitr)
+library(kableExtra)
 library(tidyverse)
 
 
@@ -17,7 +19,17 @@ crime_master <- read_rds("r_4_tidy.rds")
 # Prepare two data sets 
 # one for the plot and one for the map 
 
-crime_plot <- crime_master
+crime_plot <- crime_master %>%
+  mutate(MURDER = as.numeric(MURDER),
+         ROADACCIDENT = as.numeric(ROADACCIDENT),
+         ROADVICTIM = as.numeric(ROADVICTIM),
+         CRIMESHARE = as.numeric(CRIMESHARE),
+         RAPE = as.numeric(RAPE),
+         ROBBERY = as.numeric(ROBBERY),
+         HOOLIGANISM = as.numeric(HOOLIGANISM),
+         ECONCRIME = as.numeric(ECONCRIME),
+         JUVENILECRIME = as.numeric(JUVENILECRIME))
+
 crime_map <- crime_master %>%
   mutate(YEAR = as.character(YEAR))
 
@@ -66,13 +78,31 @@ crime_definitions <- c("the number of road accidents per 100,000 persons" = "ROA
 
 ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                 
-                  # First tabPanel gives about information and so the formatting is fluidRow
+                 # First tabPanel gives about information and so the formatting is fluidRow
                  
+
                  tabPanel("About",
-                         fluidRow(
-                           column(12,
-                              wellPanel(
-                             htmlOutput("about"))))),
+                          fluidRow(
+                            column(12,
+                                   wellPanel(
+                                     htmlOutput("about"))))),
+                 
+                 tabPanel("View the data",
+                          sidebarLayout(
+                            sidebarPanel(                              
+                              selectInput(inputId = "year_table", #internal label 
+                                          label = "Year to include in table", #label that user sees
+                                          choices = c(crime_map$YEAR), #vector of choices for user to pick from 
+                                          selected = "1990"),
+                              
+                              selectInput(inputId = "table_indicator", # internal label 
+                                          label = "Select an indicator* to display in the table", # label that user sees
+                                          choices = crime_options, # vector of choices for user to pick from 
+                                          selected = crime_options[3]),
+                              htmlOutput("define_variables_table")),
+                            mainPanel(tableOutput("ranking")))),
+                 
+  
                  
                  # Second tab panel holds the plot
                  # Uses a sidebarLayout 
@@ -80,8 +110,10 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                  tabPanel("Plot the indicators",
                           sidebarLayout( 
                             sidebarPanel(
+
                               
-                              # Allows the user to select the indicator to display 
+                              
+                               # Allows the user to select the indicator to display 
                               
                               selectInput(inputId = "y", # internal label 
                                                       label = "Select an indicator* to display on the y-axis", # label that user sees
@@ -101,11 +133,10 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                             mainPanel(
                               plotlyOutput("scatterplot"),
                               br(),
-                              htmlOutput("define_variables_y")
-                              ))),
-                  
+                              htmlOutput("define_variables_y")))),
+                 
 
-                  # Third tabPanel holds the map
+                  # fourth tabPanel holds the map
                   # Uses a sidebarLayout 
                  
                   tabPanel("Map the indicators",
@@ -174,7 +205,19 @@ server <- function(input, output){
                scale_color_discrete(name = "Regions")) %>% 
                config(displayModeBar = FALSE) })
   
+  output$ranking <- function(){
+    
+      crime_plot %>%
+        filter(YEAR == input$year_table) %>%
+        dplyr::arrange(desc(input$table_indicator)) %>%
+        select(NAME, input$table_indicator) %>% 
+        kable("html", col.names = c("Region", "Indicator")) %>%
+        kable_styling("striped", full_width = F)
+    
+    
+  }
   
+   
   # Map output
   # Merge the shapefile with the sub_setted map data
   # Color by the selected indicator 
@@ -220,6 +263,18 @@ server <- function(input, output){
             names(crime_definitions[which(crime_definitions == input$y)])))  
     
   })
+  
+  
+  # Create a variable descriptor for the table
+  
+  output$define_variables_table <- renderUI({
+    HTML(paste("* Where ",
+               str_to_lower(names(crime_options[which(crime_options == input$table_indicator)])),
+               " is ",
+               names(crime_definitions[which(crime_definitions == input$table_indicator)])))  
+    
+  })
+  
   
   # Create a variable descriptor for the map
   
