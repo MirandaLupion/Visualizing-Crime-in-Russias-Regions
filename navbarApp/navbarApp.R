@@ -7,8 +7,7 @@ library(leaflet)
 library(rgdal)
 library(shinythemes)
 library(plotly)
-library(knitr)
-library(kableExtra)
+library(DT)
 library(tidyverse)
 
 
@@ -100,7 +99,7 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                                           choices = crime_options, # vector of choices for user to pick from 
                                           selected = crime_options[3]),
                               htmlOutput("define_variables_table")),
-                            mainPanel(tableOutput("ranking")))),
+                            mainPanel(DT::dataTableOutput("ranking")))),
                  
   
                  
@@ -205,17 +204,13 @@ server <- function(input, output){
                scale_color_discrete(name = "Regions")) %>% 
                config(displayModeBar = FALSE) })
   
-  output$ranking <- function(){
-    
-      crime_plot %>%
-        filter(YEAR == input$year_table) %>%
-        select(NAME, input$table_indicator) %>% 
-        kable("html", col.names = c("Region", "Indicator")) %>%
-        kable_styling("striped", full_width = F)
-    
-    
-  }
+  output$ranking = DT::renderDataTable({
+  table_data  <- crime_plot %>%
+      filter(YEAR == input$year_table) %>%
+      select(NAME, input$table_indicator)
   
+  DT::datatable(table_data)
+  })
    
   # Map output
   # Merge the shapefile with the sub_setted map data
@@ -252,7 +247,6 @@ server <- function(input, output){
                 opacity = 1)
   })
   
-  
   # Create a variable descriptor for the plot
   
   output$define_variables_y <- renderUI({
@@ -262,7 +256,6 @@ server <- function(input, output){
             names(crime_definitions[which(crime_definitions == input$y)])))  
     
   })
-  
   
   # Create a variable descriptor for the table
   
@@ -274,9 +267,7 @@ server <- function(input, output){
     
   })
   
-  
   # Create a variable descriptor for the map
-  
   
   output$define_variables_map <- renderUI({
     HTML(paste("* Where ", 
@@ -285,8 +276,6 @@ server <- function(input, output){
                names(crime_definitions [which(crime_definitions == input$map_var)]))) 
     
   })
-  
-  
   
   # Create the text element to explain the app
   
