@@ -11,12 +11,12 @@ library(DT)
 library(tidyverse)
 
 
-# Read in the data 
+# Read in the master rds file 
 
 crime_master <- read_rds("r_4_tidy.rds")
 
 # Prepare two data sets 
-# one for the plot and one for the map 
+# one for the plot 
 
 crime_plot <- crime_master %>%
   mutate(MURDER = as.numeric(MURDER),
@@ -29,6 +29,8 @@ crime_plot <- crime_master %>%
          ECONCRIME = as.numeric(ECONCRIME),
          JUVENILECRIME = as.numeric(JUVENILECRIME))
 
+# one for the map
+
 crime_map <- crime_master %>%
   mutate(YEAR = as.character(YEAR))
 
@@ -40,7 +42,7 @@ crime_map <- crime_master %>%
 rf_map <- readOGR(dsn = "RUS_adm", layer = "RUS_adm1")
 rf_map <- spTransform(rf_map, CRS("+init=epsg:4326"))
 
-# Create nice labels for the user-selected variables for the plot
+# Create a vector of nice labels for the user-selected variables for the plot and the table 
 
 crime_options <- c("Road accidents" = "ROADACCIDENT", 
                    "Victims of road accidents" = "ROADVICTIM",
@@ -52,7 +54,7 @@ crime_options <- c("Road accidents" = "ROADACCIDENT",
                    "White-collar crimes" = "ECONCRIME",
                    "Incidences of juvenile crime" = "JUVENILECRIME") 
 
-# Create nice labels for the user-selected variables for the map
+# Create a vector of nice labels for the user-selected variables for the map
 
 crime_options_map <- c("Road accidents" = "ROADACCIDENT", 
                    "Victims of road accidents" = "ROADVICTIM",
@@ -77,40 +79,50 @@ crime_definitions <- c("the number of road accidents per 100,000 persons" = "ROA
 
 ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                 
+                 # ABOUT 
                  # First tabPanel gives about information and so the formatting is fluidRow
-                 
+                 # Holds an an htmlOutput
 
                  tabPanel("About",
                           fluidRow(
                             column(12,
                                    wellPanel(
                                      htmlOutput("about"))))),
-                 
+                 # TABLE
+                 # Second tabPanel gives us a table that displays the data
+
                  tabPanel("View the data",
                           sidebarLayout(
                             sidebarPanel(                              
+                              
+                              # Allow users to select the year to be included in the table
+                              
                               selectInput(inputId = "year_table", #internal label 
-                                          label = "Year to include in table", #label that user sees
-                                          choices = c(crime_map$YEAR), #vector of choices for user to pick from 
-                                          selected = "1990"),
+                                          label = "Year to display in table", #label that user sees
+                                          choices = c(1990:2010), #vector of choices for user to pick from 
+                                          selected = 2000),
+                              
+                              # Allow users to select the indicator to be displayed in the table
                               
                               selectInput(inputId = "table_indicator", # internal label 
-                                          label = "Select an indicator* to display in the table", # label that user sees
+                                          label = "Indicator* to display in the table", # label that user sees
                                           choices = crime_options, # vector of choices for user to pick from 
                                           selected = crime_options[3]),
                               htmlOutput("define_variables_table")),
-                            mainPanel(DT::dataTableOutput("ranking")))),
+                            
+                            mainPanel(
+                              p("Select the year and the indicator to view the data in the table."),
+                              p("Click on the indicator column name to arrange by the indicator."),
+                              br(),
+                              DT::dataTableOutput("ranking")))),
                  
-  
-                 
-                 # Second tab panel holds the plot
+                 # PLOT
+                 # Third tab panel holds the plot
                  # Uses a sidebarLayout 
                  
                  tabPanel("Plot the indicators",
                           sidebarLayout( 
                             sidebarPanel(
-
-                              
                               
                                # Allows the user to select the indicator to display 
                               
@@ -118,7 +130,11 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                                                       label = "Select an indicator* to display on the y-axis", # label that user sees
                                                       choices = crime_options, # vector of choices for user to pick from 
                                                       selected = crime_options[3]),
-                                          
+                              
+                              
+                              htmlOutput("define_variables_y"),  
+                              br(),
+                              
                               # Let users select the regions to plot
           
                               selectizeInput(inputId = "region", # internal label
@@ -130,11 +146,10 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                             # Plot output
                             
                             mainPanel(
-                              plotlyOutput("scatterplot"),
-                              br(),
-                              htmlOutput("define_variables_y")))),
+                              plotlyOutput("scatterplot")))),
                  
 
+                  # MAP
                   # fourth tabPanel holds the map
                   # Uses a sidebarLayout 
                  
@@ -152,20 +167,18 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                                # Allows the user to select the indicator to map
                                
                                selectInput(inputId = "map_var", # internal label 
-                                           label = "Indicator to map", # label that user sees
+                                           label = "Indicator* to map", # label that user sees
                                            choices = crime_options_map # vector of choices for user to pick from 
-                                           )),  
+                                           ),
                                
-                             
+                               htmlOutput("define_variables_map")),  
                             
                             # Holds the map object
                              
                              mainPanel(
                                p("Please select a year and an indicator. Then allow for up to a minute for the map to load."),
                                br(),
-                               leafletOutput("map", width = "100%", height = "500px"),
-                               br(),
-                               htmlOutput("define_variables_map")))))
+                               leafletOutput("map", width = "100%", height = "500px")))))
 
 # Server
 
@@ -204,12 +217,16 @@ server <- function(input, output){
                scale_color_discrete(name = "Regions")) %>% 
                config(displayModeBar = FALSE) })
   
-  output$ranking = DT::renderDataTable({
+  # Data table output
+  
+  output$ranking <- DT::renderDataTable({
   table_data  <- crime_plot %>%
       filter(YEAR == input$year_table) %>%
       select(NAME, input$table_indicator)
   
-  DT::datatable(table_data)
+  DT::datatable(table_data, 
+                rownames = FALSE,
+                colnames = c("Administrative unit", names(crime_options[which(crime_options == input$table_indicator)])))
   })
    
   # Map output
