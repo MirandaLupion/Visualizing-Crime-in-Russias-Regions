@@ -32,8 +32,8 @@ crime_plot <- crime_master %>%
 # one for the map
 
 crime_map <- crime_master %>%
-  mutate(YEAR = as.character(YEAR))
-
+  mutate(ROADACCIDENT = round(ROADACCIDENT, digits = 2)) %>%
+  mutate(ROADVICTIM = round(ROADVICTIM, digits = 2))
 
 # Prepare the shape file for the map 
 # Read it in
@@ -97,22 +97,29 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                               
                               # Allow users to select the year to be included in the table
                               
-                              selectInput(inputId = "year_table", #internal label 
-                                          label = "Year to display in table", #label that user sees
-                                          choices = c(1990:2010), #vector of choices for user to pick from 
-                                          selected = 2000),
+                              selectInput(inputId = "year_table",
+                                          label = "Year to display in table", 
+                                          choices = c(1990:2010), 
+                                          selected = 2000), 
                               
                               # Allow users to select the indicator to be displayed in the table
                               
-                              selectInput(inputId = "table_indicator", # internal label 
-                                          label = "Indicator* to display in the table", # label that user sees
-                                          choices = crime_options, # vector of choices for user to pick from 
+                              selectInput(inputId = "table_indicator", 
+                                          label = "Indicator* to display in the table", 
+                                          choices = crime_options, 
                                           selected = crime_options[3]),
+                              
+                              # An HTML text output that reactively defines the selected variables
+                              
                               htmlOutput("define_variables_table")),
                             
+                            # The main panel holds the data table and instructions for how to 
+                            # manipulate the data in the table
+                            
                             mainPanel(
-                              p("Select the year and the indicator to view the data in the table."),
-                              p("Click on the indicator column name to arrange by the indicator."),
+                              h4("Instructions"),
+                              p("Select the year and the indicator to view the data in the table.", br(),
+                                "Click on the indicator column name to arrange by the indicator. Use the search bar to search for a particular region"),
                               br(),
                               DT::dataTableOutput("ranking")))),
                  
@@ -126,22 +133,24 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                               
                                # Allows the user to select the indicator to display 
                               
-                              selectInput(inputId = "y", # internal label 
-                                                      label = "Select an indicator* to display on the y-axis", # label that user sees
-                                                      choices = crime_options, # vector of choices for user to pick from 
+                              selectInput(inputId = "y", 
+                                                      label = "Select an indicator* to display on the y-axis", 
+                                                      choices = crime_options, 
                                                       selected = crime_options[3]),
                               
+                              # An HTML text output that reactively defines the selected variables
                               
                               htmlOutput("define_variables_y"),  
                               br(),
                               
                               # Let users select the regions to plot
+                              # Use the options function to allow users to select a max of five regions
           
-                              selectizeInput(inputId = "region", # internal label
-                                                        label = "Select up to five regions", # label that user sees
-                                                         choices = c(crime_plot$NAME), # choose from this list 
-                                                         multiple = TRUE, # can choose multiple 
-                                                         options = list(maxItems = 5), # can choose up to five
+                              selectizeInput(inputId = "region", 
+                                                        label = "Select up to five regions", 
+                                                         choices = c(crime_plot$NAME), 
+                                                         multiple = TRUE,  
+                                                         options = list(maxItems = 5), 
                                                          selected = "Moscow")), 
                             # Plot output
                             
@@ -159,24 +168,30 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                                
                                # Allows the user to select the year to map
                                
-                               selectInput(inputId = "year", #internal label 
-                                           label = "Year to map", #label that user sees
-                                           choices = c(crime_map$YEAR), #vector of choices for user to pick from 
-                                           selected = "1990"),
+                               selectInput(inputId = "year", 
+                                           label = "Year to map", 
+                                           choices = c(1990:2010), 
+                                           selected = 2000),
                                
                                # Allows the user to select the indicator to map
                                
-                               selectInput(inputId = "map_var", # internal label 
-                                           label = "Indicator* to map", # label that user sees
-                                           choices = crime_options_map # vector of choices for user to pick from 
+                               selectInput(inputId = "map_var", 
+                                           label = "Indicator* to map", 
+                                           choices = crime_options_map,
+                                           selected = crime_options_map[1] 
                                            ),
+                               
+                               
+                               # An HTML text output that reactively defines the selected variables
                                
                                htmlOutput("define_variables_map")),  
                             
-                            # Holds the map object
+                            # Holds the map object and instructions.
                              
                              mainPanel(
-                               p("Please select a year and an indicator. Then allow for up to a minute for the map to load."),
+                               h4("Instructions"),
+                               p("Please select a year and an indicator. Then allow for up to a minute for the map to load.", 
+                                 br(),"Click and drag the map to pan to other areas. Hover over an individual region to display the data." ),
                                br(),
                                leafletOutput("map", width = "100%", height = "500px")))))
 
@@ -184,31 +199,43 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
 
 server <- function(input, output){
   
-  # Reactive that subsets the regions to plot
-  # by filtering the crime_plot data for the user inputed regions
+  # Reactive that subsets the regions to plot in the scatter plot
+  # by filtering the crime_plot data for the user inputed regions.
+  # Rename two the variables to display more nicely in the plotly output.
   
   regions_subset <- reactive({ 
-    req(input$region)
-    filter(crime_plot, NAME %in% input$region)})
+    req(input$region) 
+    crime_plot %>%
+      filter(NAME %in% input$region) %>%
+      rename(Region = NAME, Year = YEAR) })
   
   # Reactive that filters the crime_map data for the user-selected year
+  # and for the user-selected variable. Selecting only the necessary 
+  # variables and data makes the map render more quickly.
+  # Rename the input$map_var to a single variable name, which makes it easier
+  # to work with in conjunction with the shapefile.
   
   map_subset <- reactive({
     req(input$year, input$map_var)
     crime_map %>%
     filter(YEAR == input$year) %>%
       select(ID_1, NAME, input$map_var) %>%
-      rename(selected_var = input$map_var)
+      rename(selected_var = input$map_var) 
     
     
   })
   
   # Scatterplot output 
-  # Wrap ggplot in ggplotly wrapper
+  # Wrap ggplot in ggplotly wrapper.
+  # Use the filtered data.
+  # Plot the year on the x-axis and the user-selected variable on the y-axis.
+  # Color by region.
+  # Use my vector of labels to generate a reactive title and axis labels.
+  # Rename the legend and remove the Plotly display bar. 
   
   output$scatterplot <- renderPlotly({
-    ggplotly(ggplot(data = regions_subset(), aes_string(x = "YEAR", y = input$y, color = "NAME")) + #plot year on x and value on y
-               geom_point(alpha = 0.8) + #color by region
+    ggplotly(ggplot(data = regions_subset(), aes_string(x = "Year", y = input$y, color = "Region")) + 
+               geom_point(alpha = 0.8) + 
                labs(x = "Year", 
                     y = names(crime_options[which(crime_options == input$y)]),
                     title = paste0(names(crime_options[which(crime_options == input$y)]), " from 1990 to 2010 ")) +
@@ -217,7 +244,11 @@ server <- function(input, output){
                scale_color_discrete(name = "Regions")) %>% 
                config(displayModeBar = FALSE) })
   
-  # Data table output
+  # Data table output.
+  # Save the data, filtered by the user-selected year and selecting for just the name and indicator
+  # to a new dataframe.
+  # Display this data frame in the app.
+  # Do not display rownames. Set custom and reactive column names.
   
   output$ranking <- DT::renderDataTable({
   table_data  <- crime_plot %>%
@@ -230,25 +261,31 @@ server <- function(input, output){
   })
    
   # Map output
-  # Merge the shapefile with the sub_setted map data
-  # Color by the selected indicator 
-  # Set the options for the leaflet viewer 
-  # Allow the user to drag
-  # Add a CartoDB base map
-  # Set the default view
-  # Set the max bounds
-  # Add the shapefile with labels
-  # Color by the coloring set up
-  
+  # See code for comments
+
   output$map <- renderLeaflet({
 
+    # Merge the shapefile with the sub_setted map data
+    
    rf_map <- merge(rf_map, map_subset(), by = "ID_1", duplicateGeoms = TRUE)
+   
+   # Select the user-inputted variable to map (choropleth) in the domain 
+   # Color by the selected indicator
+   
     coloring <- colorNumeric(palette = "Blues",
                              domain = rf_map@data$selected_var)
+  
+  # Set the options for the leaflet viewer
+  # Allow the user to drag
+  # Add a basemap
+  # Set the default view and the max bounds  
+  # Add the polygon shapefile 
+  # Add custom and reactive pop-up labels and color by the user-selected indicator  
+    
   rf_map %>%
       leaflet(options = leafletOptions(dragging = TRUE)) %>%
       addProviderTiles(provider = "CartoDB") %>%
-      fitBounds(lng1 = 40, lat1 = 30, lng2 = 150, lat2 = 100) %>%
+      setView(lat = 60, lng = 37, zoom = 3) %>%
       setMaxBounds(lng1 = 20, lat1 = 30, lng2 = 170, lat2 = 100) %>%
       addPolygons(weight = 1,
                   label = ~paste0(NAME, ", ",
@@ -256,10 +293,14 @@ server <- function(input, output){
                   color = ~coloring(selected_var)) %>%
 
       # Add a legend in the bottom
+      # Which uses the coloring set above
+      # And the user-selected variable
+      # And has a reactive title
 
       addLegend("bottomright",
                 pal = coloring,
                 values = ~selected_var,
+                na.label = "No data",
                 title = names(crime_options_map[which(crime_options_map == input$map_var)]),
                 opacity = 1)
   })
@@ -299,11 +340,20 @@ server <- function(input, output){
   output$about <- renderUI({
     HTML(paste(
       h3("Summary"),
-      p("This application allows users to visualize crime data for the Russian Federation's federal subjects (administrative units) from 1990 through 2010."),
-      h3("Source"), 
-      p("Inter-university Consortium for Political and Social Research (ICPSR):"),  
-      p("ICPSR 35355 Aggregate Data, Regions of Russia (RoR), 1990 - 2010, created by Irina Mirkina."),
-      tags$a(href = "https://www.icpsr.umich.edu/icpsrweb/ICPSR/studies/35355", "Click here to learn more about the data.")))
+      p("This application allows users to visualize crime data for 82 of the Russian Federation's federal subjects (administrative units) from 1990 through 2010."),
+      p("Click through the above tabs to view the data interactively in a table, scatterplot, and map. This data exploration highlights the geographic disparity across Russia's regions in terms of social indicators.  
+        The data also helps communicate changes in crime trends from the tumultuous 1990s period through President Vladimir Putin's first two terms and the first half of Dmitry Medvedev's presidency."),
+      h3("Sources"), 
+      p("Inter-university Consortium for Political and Social Research (ICPSR):", 
+        br(),   
+        "ICPSR 35355 Aggregate Data, Regions of Russia (RoR), 1990 - 2010, created by Irina Mirkina.",
+         tags$a(href = "https://www.icpsr.umich.edu/icpsrweb/ICPSR/studies/35355", 
+                br(),  "Click here to learn more about this data.")),
+      p("Diva GIS:", 
+        br(), 
+        "Polygon shapefile for Russia's first-level administrative boundaries (RUS_adm1.shp and associated files)", 
+        tags$a(href = "http://www.diva-gis.org/", 
+               br(),"Click here to learn more about this data"))))
   })
   
 }
