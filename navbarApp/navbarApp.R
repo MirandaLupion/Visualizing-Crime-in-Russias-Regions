@@ -286,7 +286,7 @@ server <- function(input, output){
       leaflet(options = leafletOptions(dragging = TRUE)) %>%
       addProviderTiles(provider = "CartoDB") %>%
       setView(lat = 60, lng = 37, zoom = 3) %>%
-      setMaxBounds(lng1 = 20, lat1 = 30, lng2 = 170, lat2 = 100) %>%
+      setMaxBounds(lng1 = 15, lat1 = 25, lng2 = 180, lat2 = 90) %>%
       addPolygons(weight = 1,
                   label = ~paste0(NAME, ", ",
                                   names(crime_options_map[which(crime_options_map == input$map_var)]), ": ",  selected_var),
