@@ -7,6 +7,7 @@
 # 3) data_preparation.R - R script where I prepared the data 
 # 4) 35355-Codebook.pdf - Codebook for the 35355 dataset 
 # 5) technical_notes.R - this R script file describing the contents of the project
+# 6) Regions4rda - the original data file, modified in data_preparation.R
 
 # Libraries needed:
 # shiny
