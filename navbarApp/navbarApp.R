@@ -162,11 +162,15 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                               p("Select up to five regions and the indicator to view the data in the plot.", br(), "Hover over each point for more information."), 
                               plotlyOutput("scatterplot")))),
 
-                  # REGRESSION
+                 # REGRESSION
+                 # Fouth tab holds a model plot
                  
                  tabPanel("Model the indicators",
                           sidebarLayout(
                             sidebarPanel( 
+                              
+                              # Let the user select the y variable to regress
+                              
                               selectInput(inputId = "y_reg", 
                                                       label = "Select an indicator to plot on the y-axis", 
                                                       choices = crime_options, 
@@ -175,6 +179,8 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                               htmlOutput("define_variables_y_reg"),  
                               br(),
                               
+                              # Let the user select the x variable to regress
+                              
                               selectInput(inputId = "x_reg", 
                                           label = "Select an indicator to plot on the x-axis", 
                                           choices = crime_options, 
@@ -182,6 +188,8 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                               
                               htmlOutput("define_variables_x_reg"),  
                               br()),
+                        
+                            # Model output
                             
                             mainPanel(
                               h4("Instructions"),
@@ -357,14 +365,26 @@ server <- function(input, output){
   # Reactive text output for strength of correlation
   
   weak_strong <- reactive({
-    my_formula <- paste0(input$y_reg, "  ~ ", input$x_reg)
-    m1 <- summary(lm(my_formula, data = crime_plot))
+    # my_formula <- paste0(input$y_reg, "  ~ ", input$x_reg)
+    # m1 <- summary(lm(my_formula, data = crime_plot))
+     
     
-    if (round(m1$coefficients[2], digits = 2) > .5 ) {
+    # if (round(m1$coefficients[2], digits = 2) > .5 ) {
+    #   weak_strong <- "positive"
+    # } else if (round(m1$coefficients[2], digits = 2) > 0 ) {
+    #   weak_strong <- "weak positive"
+    # } else if (round(m1$coefficients[2], digits = 2) == 0) {
+    #   weak_strong <- "neutral"
+    # } else {
+    #   weak_strong <- "weak negative"
+    # }
+    
+   coeff <- cor(x = input$x_reg, y = input$y_reg)
+    if (round(coeff, digits = 2) > .5 ) {
       weak_strong <- "positive"
-    } else if (round(m1$coefficients[2], digits = 2) > 0 ) {
+    } else if (round(coeff, digits = 2) > 0 ) {
       weak_strong <- "weak positive"
-    } else if (round(m1$coefficients[2], digits = 2) == 0) {
+    } else if (round(coeff, digits = 2) == 0) {
       weak_strong <- "neutral"
     } else {
       weak_strong <- "weak negative"
@@ -406,10 +426,10 @@ server <- function(input, output){
     m1 <- summary(m0)
     fstat <- m1$fstatistic 
     pval <- pf(fstat[1], fstat[2], fstat[3], lower.tail = F)
-    
+    coeff <- cor(x = input$x_reg, y = input$y_reg)
     
     HTML(paste(tags$ul(
-      tags$li("The slope coefficient is appoximately ", strong(round(m1$coefficients[2], digits = 2)), 
+      tags$li("The correlation coefficient is appoximately ", strong(round(coeff, digits = 2)), 
               ". This is the slope of the regression line and means that the variables have a ", weak_strong(), " relationship."),
       tags$li("The multiple r-squared is appoximately ", strong(round(m1$r.squared, digits = 2)), 
               ". This means that roughly ", round((m1$r.squared)*100, digits = 2), "percent of the variation is explained by this variable." ),
