@@ -161,10 +161,37 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                               h4("Instructions"),
                               p("Select up to five regions and the indicator to view the data in the plot.", br(), "Hover over each point for more information."), 
                               plotlyOutput("scatterplot")))),
-                 
 
-                  # MAP
-                  # fourth tabPanel holds the map
+                  # REGRESSION
+                 
+                 tabPanel("Model the indicators",
+                          sidebarLayout(
+                            sidebarPanel( 
+                              selectInput(inputId = "y_reg", 
+                                                      label = "Select an indicator to plot on the y-axis", 
+                                                      choices = crime_options, 
+                                                      selected = crime_options[3]),
+                              
+                              htmlOutput("define_variables_y_reg"),  
+                              br(),
+                              
+                              selectInput(inputId = "x_reg", 
+                                          label = "Select an indicator to plot on the x-axis", 
+                                          choices = crime_options, 
+                                          selected = crime_options[3]),
+                              
+                              htmlOutput("define_variables_x_reg"),  
+                              br()),
+                            
+                            mainPanel(
+                              h4("Instructions"),
+                              p("Select a y variable to regress against an x variable.", br(), "Then, check out the model summary below."),
+                              plotOutput("regression_plot"))
+                          )),
+                 
+                 
+                 # MAP
+                  # fifth tabPanel holds the map
                   # Uses a sidebarLayout 
                  
                   tabPanel("Map the indicators",
@@ -312,6 +339,47 @@ server <- function(input, output){
                 opacity = 1)
   })
   
+  # Correlation plot output
+  
+  output$regression_plot <- renderPlot({
+    ggplot(data = crime_plot, aes_string(x = input$x_reg, y = input$y_reg)) +
+      geom_point(alpha = 0.5) +
+      geom_smooth(method = "lm", SE = FALSE) +
+      labs(x = names(crime_options[which(crime_options == input$x_reg)]), 
+           y = names(crime_options[which(crime_options == input$y_reg)]),
+           title = paste("Regressing", names(crime_options[which(crime_options == input$y_reg)]), 
+                         "against", names(crime_options[which(crime_options == input$x_reg)])))
+    
+  })
+  
+  # Reactive text output for strength of correlation
+  
+  weak_strong <- reactive({
+    my_formula <- paste0(input$x_reg, input$y_reg)
+    m1 <- summary(lm(my_formula, data = crime_plot))
+    
+    if (m1$coefficients[2] > 0 ) {
+      weak_strong <- "weak positive"
+    } else {
+      weak_strong <- "weak negative"
+    }
+    
+  })
+  
+  # Reactive text output for signif of correlation
+  
+  is_sig  <- reactive({
+    my_formula <- paste0(input$x_reg, input$y_reg)
+    m1 <- summary(lm(my_formula, data = crime_plot))
+    fstat <- m1$fstatistic 
+    pval <- pf(fstat[1], fstat[2], fstat[3], lower.tail = F)
+    
+    if (pval < .05) { 
+      is_sig <- "is"
+    } else {
+      is_sig <- "is not"
+    }})
+  
   # Create a variable descriptor for the plot
   
   output$define_variables_y <- renderUI({
@@ -319,6 +387,26 @@ server <- function(input, output){
              str_to_lower(names(crime_options[which(crime_options == input$y)])),
              " is ",
             names(crime_definitions[which(crime_definitions == input$y)])))  
+    
+  })
+  
+  # Create a y variable descriptor for the reg plot
+  
+  output$define_variables_y_reg <- renderUI({
+    HTML(paste("* Where ",
+               str_to_lower(names(crime_options[which(crime_options == input$y_reg)])),
+               " is ",
+               names(crime_definitions[which(crime_definitions == input$y_reg)])))  
+    
+  })
+  
+  # Create a x variable descriptor for the reg plot
+  
+  output$define_variables_x_reg <- renderUI({
+    HTML(paste("* Where ",
+               str_to_lower(names(crime_options[which(crime_options == input$x_reg)])),
+               " is ",
+               names(crime_definitions[which(crime_definitions == input$x_reg)])))  
     
   })
   
@@ -366,4 +454,5 @@ server <- function(input, output){
 }
 
 # Run the application 
+
 shinyApp(ui = ui, server = server)
