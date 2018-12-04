@@ -1,4 +1,5 @@
-# Load libraries 
+# Load libraries with tidyverse last to make sure
+# that none of its functionality gets overridden 
 
 library(shiny)
 library(stringr)
@@ -11,71 +12,73 @@ library(DT)
 library(tidyverse)
 
 
-# Read in the master rds file 
+# I prepared my data in the data_preparation.R file and saved the rds to the app folder
+# Here I read it in. 
+# I rename the variables so that they'll appear nicely in the tooltip function of Plotly. 
+# This function, which allows the user to hover over a point and get more info, does not allow for custom names
+# using a predefined vector. So to get nice labels, you need to have nice variable names already.
 
-crime_master <- read_rds("r_4_tidy.rds")
+crime_master <- read_rds("r_4_tidy.rds") %>%
+  rename(Murder = MURDER, Accidents = ROADACCIDENT, Victims = ROADVICTIM, Share = CRIMESHARE, Rape = RAPE,
+         Robbery = ROBBERY, Hooliganism = HOOLIGANISM, Whitecollar = ECONCRIME, Juvenile = JUVENILECRIME) %>%
+  
+  # I choose to round these two variables so that their quantities will display more nicely in the map, plot, and data table
+  
+  mutate(Accidents = round(Accidents, digits = 2)) %>%
+  mutate(Victims = round(Victims, digits = 2)) 
 
-# Prepare two data sets 
-# one for the plot 
+# I chose to prepare two data sets 
+# - one for the plot
 
-crime_plot <- crime_master %>%
-  mutate(MURDER = as.numeric(MURDER),
-         ROADACCIDENT = as.numeric(ROADACCIDENT),
-         ROADVICTIM = as.numeric(ROADVICTIM),
-         CRIMESHARE = as.numeric(CRIMESHARE),
-         RAPE = as.numeric(RAPE),
-         ROBBERY = as.numeric(ROBBERY),
-         HOOLIGANISM = as.numeric(HOOLIGANISM),
-         ECONCRIME = as.numeric(ECONCRIME),
-         JUVENILECRIME = as.numeric(JUVENILECRIME))
+crime_plot <- crime_master 
 
-# one for the map
+# And one for the map. 
 
-crime_map <- crime_master %>%
-  mutate(ROADACCIDENT = round(ROADACCIDENT, digits = 2)) %>%
-  mutate(ROADVICTIM = round(ROADVICTIM, digits = 2))
+crime_map <- crime_master 
 
-# Prepare the shape file for the map 
-# Read it in
-# Project the shape file 
+# Read in the shape file for the map from the files stored in the app folder
+# Project the shape file in the standard WGS 84 projection. 
+# I chose this projection because itis used by most GPS navigation tools and the tech, on which Leaflet is based
 
 rf_map <- readOGR(dsn = "RUS_adm", layer = "RUS_adm1")
 rf_map <- spTransform(rf_map, CRS("+init=epsg:4326"))
 
 # Create a vector of nice labels for the user-selected variables for the plot and the table 
 
-crime_options <- c("Road accidents" = "ROADACCIDENT", 
-                   "Victims of road accidents" = "ROADVICTIM",
-                   "Crime share" = "CRIMESHARE", 
-                   "Murders" = "MURDER",
-                   "Incidences of rape" = "RAPE",
-                   "Robberies" = "ROBBERY",
-                   "Incidences of hooliganism" = "HOOLIGANISM",
-                   "White-collar crimes" = "ECONCRIME",
-                   "Incidences of juvenile crime" = "JUVENILECRIME") 
+crime_options <- c("Road accidents" = "Accidents", 
+                   "Victims of road accidents" = "Victims",
+                   "Crime share" = "Share", 
+                   "Murders" = "Murder",
+                   "Incidences of rape" = "Rape",
+                   "Robberies" = "Robbery",
+                   "Incidences of hooliganism" = "Hooliganism",
+                   "White-collar crimes" = "Whitecollar",
+                   "Incidences of juvenile crime" = "Juvenile") 
 
 # Create a vector of nice labels for the user-selected variables for the map
+# This vector only includes variables with data for every year.
+# Including variables that do not have data for every year will throw an error on the map.
 
-crime_options_map <- c("Road accidents" = "ROADACCIDENT", 
-                   "Victims of road accidents" = "ROADVICTIM",
-                   "Crime share" = "CRIMESHARE", 
-                   "Murders" = "MURDER",
-                   "Incidences of juvenile crime" = "JUVENILECRIME") 
+crime_options_map <- c("Road accidents" = "Accidents", 
+                   "Victims of road accidents" = "Victims",
+                   "Crime share" = "Share", 
+                   "Murders" = "Murder",
+                   "Incidences of juvenile crime" = "Juvenile") 
 
 # Create a vector of definitions for these variables
 
-crime_definitions <- c("the number of road accidents per 100,000 persons" = "ROADACCIDENT", 
-                   "the number of road accident victims per 100,000 persons" = "ROADVICTIM",
-                   "the number of registered crimes per 100,000 persons" = "CRIMESHARE", 
-                   "the number of murders and murder attempts" = "MURDER",
-                   "the number of reported rapes" = "RAPE",
-                   "the number of reported robberies" = "ROBBERY",
-                   "the number of reported acts of hooliganism" = "HOOLIGANISM",
-                   "the number of reported white-collar crimes" = "ECONCRIME",
-                   "the number of reported juvenile crimes" = "JUVENILECRIME") 
+crime_definitions <- c("the number of road accidents per 100,000 persons" = "Accidents", 
+                   "the number of road accident victims per 100,000 persons" = "Victims",
+                   "the number of registered crimes per 100,000 persons" = "Share", 
+                   "the number of murders and murder attempts" = "Murder",
+                   "the number of reported rapes" = "Rape",
+                   "the number of reported robberies" = "Robbery",
+                   "the number of reported acts of hooliganism" = "Hooliganism",
+                   "the number of reported white-collar crimes" = "Whitecollar",
+                   "the number of reported juvenile crimes" = "Juvenile") 
 
 # Define UI for application with a nice theme
-# Use a navBar structure
+# Use a navBar structure because the three visual compoenents each require different inputs 
 
 ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                 
@@ -155,6 +158,8 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                             # Plot output
                             
                             mainPanel(
+                              h4("Instructions"),
+                              p("Select up to five regions and the indicator to view the data in the plot.", br(), "Hover over each point for more information."), 
                               plotlyOutput("scatterplot")))),
                  
 
@@ -201,6 +206,8 @@ server <- function(input, output){
   
   # Reactive that subsets the regions to plot in the scatter plot
   # by filtering the crime_plot data for the user inputed regions.
+  # Including all the regions in the plot would cause massive overplotting. That's why
+  # filtering is important. 
   # Rename two the variables to display more nicely in the plotly output.
   
   regions_subset <- reactive({ 
@@ -227,11 +234,11 @@ server <- function(input, output){
   
   # Scatterplot output 
   # Wrap ggplot in ggplotly wrapper.
-  # Use the filtered data.
+  # Use the filtered data to only include user-selected regions.
   # Plot the year on the x-axis and the user-selected variable on the y-axis.
   # Color by region.
   # Use my vector of labels to generate a reactive title and axis labels.
-  # Rename the legend and remove the Plotly display bar. 
+  # Rename the legend and remove the Plotly display bar, which is an eyesore and not useful. 
   
   output$scatterplot <- renderPlotly({
     ggplotly(ggplot(data = regions_subset(), aes_string(x = "Year", y = input$y, color = "Region")) + 
@@ -277,7 +284,7 @@ server <- function(input, output){
   
   # Set the options for the leaflet viewer
   # Allow the user to drag
-  # Add a basemap
+  # Add a basemap to help users situate themselves 
   # Set the default view and the max bounds  
   # Add the polygon shapefile 
   # Add custom and reactive pop-up labels and color by the user-selected indicator  
