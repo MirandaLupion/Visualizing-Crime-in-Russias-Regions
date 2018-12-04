@@ -186,7 +186,9 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                             mainPanel(
                               h4("Instructions"),
                               p("Select a y variable to regress against an x variable.", br(), "Then, check out the model summary below."),
-                              plotOutput("regression_plot"))
+                              plotOutput("regression_plot"),
+                              br(),
+                              htmlOutput("stats"))
                           )),
                  
                  
@@ -355,11 +357,15 @@ server <- function(input, output){
   # Reactive text output for strength of correlation
   
   weak_strong <- reactive({
-    my_formula <- paste0(input$x_reg, input$y_reg)
+    my_formula <- paste0(input$y_reg, "  ~ ", input$x_reg)
     m1 <- summary(lm(my_formula, data = crime_plot))
     
-    if (m1$coefficients[2] > 0 ) {
+    if (round(m1$coefficients[2], digits = 2) > .5 ) {
+      weak_strong <- "positive"
+    } else if (round(m1$coefficients[2], digits = 2) > 0 ) {
       weak_strong <- "weak positive"
+    } else if (round(m1$coefficients[2], digits = 2) == 0) {
+      weak_strong <- "neutral"
     } else {
       weak_strong <- "weak negative"
     }
@@ -369,7 +375,7 @@ server <- function(input, output){
   # Reactive text output for signif of correlation
   
   is_sig  <- reactive({
-    my_formula <- paste0(input$x_reg, input$y_reg)
+    my_formula <- paste0(input$y_reg, "  ~ ", input$x_reg)    
     m1 <- summary(lm(my_formula, data = crime_plot))
     fstat <- m1$fstatistic 
     pval <- pf(fstat[1], fstat[2], fstat[3], lower.tail = F)
@@ -379,6 +385,39 @@ server <- function(input, output){
     } else {
       is_sig <- "is not"
     }})
+  
+  # Define the summary text for the regression plot
+  
+  # Define the summary text output
+  # Regress accuracy against the user-selected variable
+  # Save the summary of the model and extract the p-value from the model
+  # Create a reactive text ouput in which the 1) r squared, p value, and significance explanation change 
+  # in response to the user selected variable 
+  
+  output$stats <- renderPrint({
+    
+    if(input$y_reg == input$x_reg) {
+      HTML(paste("Please select two different variables.")) 
+      
+    } else {
+    
+    my_formula <- paste0(input$y_reg, "  ~ ", input$x_reg)
+    m0 <- (lm(my_formula, data = crime_plot))
+    m1 <- summary(m0)
+    fstat <- m1$fstatistic 
+    pval <- pf(fstat[1], fstat[2], fstat[3], lower.tail = F)
+    
+    
+    HTML(paste(tags$ul(
+      tags$li("The slope coefficient is appoximately ", strong(round(m1$coefficients[2], digits = 2)), 
+              ". This is the slope of the regression line and means that the variables have a ", weak_strong(), " relationship."),
+      tags$li("The multiple r-squared is appoximately ", strong(round(m1$r.squared, digits = 2)), 
+              ". This means that roughly ", round((m1$r.squared)*100, digits = 2), "percent of the variation is explained by this variable." ),
+      tags$li("The p-value is appoximately ", strong(round(pval, digits = 2)), ". This means that the result ", is_sig(), " statistically significant
+              with respect to a significance level of 0.05.")))) }
+    
+    
+  })
   
   # Create a variable descriptor for the plot
   
