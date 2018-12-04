@@ -354,7 +354,7 @@ server <- function(input, output){
   output$regression_plot <- renderPlot({
     ggplot(data = crime_plot, aes_string(x = input$x_reg, y = input$y_reg)) +
       geom_point(alpha = 0.5) +
-      geom_smooth(method = "lm", SE = FALSE) +
+      geom_smooth(method = "lm", se = FALSE) +
       labs(x = names(crime_options[which(crime_options == input$x_reg)]), 
            y = names(crime_options[which(crime_options == input$y_reg)]),
            title = paste("Regressing", names(crime_options[which(crime_options == input$y_reg)]), 
@@ -379,7 +379,10 @@ server <- function(input, output){
     #   weak_strong <- "weak negative"
     # }
     
-   coeff <- cor(x = input$x_reg, y = input$y_reg)
+    x_var_reg <- input$x_reg
+    y_var_reg <- input$y_reg
+    
+   coeff <- cor(x = crime_plot$x_var_reg, y = crime_plot$y_var_reg)
     if (round(coeff, digits = 2) > .5 ) {
       weak_strong <- "positive"
     } else if (round(coeff, digits = 2) > 0 ) {
@@ -426,7 +429,10 @@ server <- function(input, output){
     m1 <- summary(m0)
     fstat <- m1$fstatistic 
     pval <- pf(fstat[1], fstat[2], fstat[3], lower.tail = F)
-    coeff <- cor(x = input$x_reg, y = input$y_reg)
+    
+    x_var_reg <- input$x_reg
+    y_var_reg <- input$y_reg
+    coeff <- cor(x = crime_plot$x_var_reg, y = crime_plot$y_var_reg)
     
     HTML(paste(tags$ul(
       tags$li("The correlation coefficient is appoximately ", strong(round(coeff, digits = 2)), 
