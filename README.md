@@ -14,7 +14,7 @@ For more on organized crime in Russia in the 1990s and Putin-era reforms, see [t
 
 ### Shiny
 
-Please note that this app cannot be deployed on my Shiny account; the repeatred rendering of the map using a detailed shapefile is taxing, and my free Shiny account runs out of memory. I offered to purchase more memory to deploy the app, but the Preceptor said that was not necessary, as long as it displayed in the RStudio HTML viewer.
+Please note that this app cannot be deployed on my Shiny account; the repeated rendering of the map using a detailed shapefile is taxing, and my free Shiny account runs out of memory. I offered to purchase more memory to deploy the app, but the Preceptor said that was not necessary, as long as it displayed in the RStudio HTML viewer.
 
 ### Data Sources
 
