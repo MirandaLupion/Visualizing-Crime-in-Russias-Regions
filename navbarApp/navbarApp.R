@@ -365,25 +365,12 @@ server <- function(input, output){
   # Reactive text output for strength of correlation
   
   weak_strong <- reactive({
-    # my_formula <- paste0(input$y_reg, "  ~ ", input$x_reg)
-    # m1 <- summary(lm(my_formula, data = crime_plot))
-     
-    
-    # if (round(m1$coefficients[2], digits = 2) > .5 ) {
-    #   weak_strong <- "positive"
-    # } else if (round(m1$coefficients[2], digits = 2) > 0 ) {
-    #   weak_strong <- "weak positive"
-    # } else if (round(m1$coefficients[2], digits = 2) == 0) {
-    #   weak_strong <- "neutral"
-    # } else {
-    #   weak_strong <- "weak negative"
-    # }
     
     x_var_reg <- input$x_reg
     y_var_reg <- input$y_reg
     
-   coeff <- cor(x = crime_plot$x_var_reg, y = crime_plot$y_var_reg)
-    if (round(coeff, digits = 2) > .5 ) {
+   coeff <- cor(x = crime_plot[[x_var_reg]], y = crime_plot[[y_var_reg]], use = "pairwise")
+    if (round(coeff, digits = 2) > .4 ) {
       weak_strong <- "positive"
     } else if (round(coeff, digits = 2) > 0 ) {
       weak_strong <- "weak positive"
@@ -420,7 +407,7 @@ server <- function(input, output){
   output$stats <- renderPrint({
     
     if(input$y_reg == input$x_reg) {
-      HTML(paste("Please select two different variables.")) 
+      HTML(paste(h4("Model summary"), "Please select two distinct variables.")) 
       
     } else {
     
@@ -432,9 +419,9 @@ server <- function(input, output){
     
     x_var_reg <- input$x_reg
     y_var_reg <- input$y_reg
-    coeff <- cor(x = crime_plot$x_var_reg, y = crime_plot$y_var_reg)
+    coeff <- cor(x = crime_plot[[x_var_reg]], y = crime_plot[[y_var_reg]], use = "pairwise")
     
-    HTML(paste(tags$ul(
+    HTML(paste(h4("Model summary"), tags$ul(
       tags$li("The correlation coefficient is appoximately ", strong(round(coeff, digits = 2)), 
               ". This is the slope of the regression line and means that the variables have a ", weak_strong(), " relationship."),
       tags$li("The multiple r-squared is appoximately ", strong(round(m1$r.squared, digits = 2)), 
