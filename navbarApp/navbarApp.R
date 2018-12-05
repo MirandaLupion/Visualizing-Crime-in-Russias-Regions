@@ -118,12 +118,13 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                             
                             # The main panel holds the data table and instructions for how to 
                             # manipulate the data in the table
+                            # I chose to put the instructions in a wellPanel to make them distinct from the visualization
                             
                             mainPanel(
-                              h4("Instructions"),
-                              p("Select the year and the indicator to view the data in the table.", br(),
-                                "Click on the indicator column name to arrange by the indicator. Use the search bar to search for a particular region"),
-                              br(),
+                              wellPanel(h4("Instructions"),
+                              p("Select the year and the indicator to view the data in the table.
+                                Click on the indicator column name to arrange by the indicator. Use the search bar to search for a particular region."),
+                              br()),
                               DT::dataTableOutput("ranking")))),
                  
                  # PLOT
@@ -156,10 +157,12 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                                                          options = list(maxItems = 5), 
                                                          selected = "Moscow")), 
                             # Plot output
+                            # I chose to put the instructions in a wellPanel to make them distinct from the visualization
                             
                             mainPanel(
-                              h4("Instructions"),
-                              p("Select up to five regions and the indicator to view the data in the plot.", br(), "Hover over each point for more information."), 
+                             wellPanel(
+                               h4("Instructions"),
+                              p("Select up to five regions and an indicator to view the data in the plot.", br(), "Hover over each point for more information.")), 
                               plotlyOutput("scatterplot")))),
 
                  # REGRESSION
@@ -192,8 +195,8 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                             # Model output
                             
                             mainPanel(
-                              h4("Instructions"),
-                              p("Select a y variable to regress against an x variable.", br(), "Then, check out the model summary below."),
+                              wellPanel( h4("Instructions"),
+                              p("Select a y variable to regress against an x variable. Then check out the model summary below.")),
                               plotOutput("regression_plot"),
                               br(),
                               htmlOutput("stats"))
@@ -231,9 +234,9 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                             # Holds the map object and instructions.
                              
                              mainPanel(
-                               h4("Instructions"),
+                             wellPanel(  h4("Instructions"),
                                p("Please select a year and an indicator. Then allow for up to a minute for the map to load.", 
-                                 br(),"Click and drag the map to pan to other areas. Hover over an individual region to display the data." ),
+                                 br(),"Click and drag the map to pan to other areas. Hover over an individual region to display the data." )),
                                br(),
                                leafletOutput("map", width = "100%", height = "500px")))))
 
@@ -357,8 +360,8 @@ server <- function(input, output){
       geom_smooth(method = "lm", se = FALSE) +
       labs(x = names(crime_options[which(crime_options == input$x_reg)]), 
            y = names(crime_options[which(crime_options == input$y_reg)]),
-           title = paste("Regressing", names(crime_options[which(crime_options == input$y_reg)]), 
-                         "against", names(crime_options[which(crime_options == input$x_reg)])))
+           title = paste("Regressing", str_to_lower(names(crime_options[which(crime_options == input$y_reg)])), 
+                         "against", str_to_lower(names(crime_options[which(crime_options == input$x_reg)]))))
     
   })
   
@@ -422,11 +425,11 @@ server <- function(input, output){
     coeff <- cor(x = crime_plot[[x_var_reg]], y = crime_plot[[y_var_reg]], use = "pairwise")
     
     HTML(paste(h4("Model summary"), tags$ul(
-      tags$li("The correlation coefficient is appoximately ", strong(round(coeff, digits = 2)), 
+      tags$li("The correlation coefficient is approximately ", strong(round(coeff, digits = 2)), 
               ". This is the slope of the regression line and means that the variables have a ", weak_strong(), " relationship."),
-      tags$li("The multiple r-squared is appoximately ", strong(round(m1$r.squared, digits = 2)), 
+      tags$li("The multiple r-squared is approximately ", strong(round(m1$r.squared, digits = 2)), 
               ". This means that roughly ", round((m1$r.squared)*100, digits = 2), "percent of the variation is explained by this variable." ),
-      tags$li("The p-value is appoximately ", strong(round(pval, digits = 2)), ". This means that the result ", is_sig(), " statistically significant
+      tags$li("The p-value is approximately ", strong(round(pval, digits = 2)), ". This means that the result ", is_sig(), " statistically significant
               with respect to a significance level of 0.05.")))) }
     
     
@@ -488,7 +491,7 @@ server <- function(input, output){
     HTML(paste(
       h3("Summary"),
       p("This application allows users to visualize crime data for 82 of the Russian Federation's federal subjects (administrative units) from 1990 through 2010."),
-      p("Click through the above tabs to view the data interactively in a table, scatterplot, and map. This data exploration highlights the geographic disparity across Russia's regions in terms of social indicators.  
+      p("Click through the above tabs to view the data interactively in a table, scatterplot, linear regression model, and map. This data exploration highlights the geographic disparity across Russia's regions in terms of social indicators.  
         The data also helps communicate changes in crime trends from the tumultuous 1990s period through President Vladimir Putin's first two terms and the first half of Dmitry Medvedev's presidency."),
       h3("Sources"), 
       p("Inter-university Consortium for Political and Social Research (ICPSR):", 
