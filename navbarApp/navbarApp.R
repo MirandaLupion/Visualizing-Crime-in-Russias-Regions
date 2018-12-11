@@ -20,7 +20,7 @@ library(tidyverse)
 
 crime_master <- read_rds("r_4_tidy.rds") %>%
   rename(Murder = MURDER, Accidents = ROADACCIDENT, Victims = ROADVICTIM, Share = CRIMESHARE, Rape = RAPE,
-         Robbery = ROBBERY, Hooliganism = HOOLIGANISM, Whitecollar = ECONCRIME, Juvenile = JUVENILECRIME) %>%
+         Robbery = ROBBERY, Whitecollar = ECONCRIME, Juvenile = JUVENILECRIME) %>%
   
   # I choose to round these two variables so that their quantities will display more nicely in the map, plot, and data table
   
@@ -51,7 +51,6 @@ crime_options <- c("Road accidents" = "Accidents",
                    "Murders" = "Murder",
                    "Incidences of rape" = "Rape",
                    "Robberies" = "Robbery",
-                   "Incidences of hooliganism" = "Hooliganism",
                    "White-collar crimes" = "Whitecollar",
                    "Incidences of juvenile crime" = "Juvenile") 
 
@@ -73,7 +72,6 @@ crime_definitions <- c("the number of road accidents per 100,000 persons" = "Acc
                    "the number of murders and murder attempts" = "Murder",
                    "the number of reported rapes" = "Rape",
                    "the number of reported robberies" = "Robbery",
-                   "the number of reported acts of hooliganism" = "Hooliganism",
                    "the number of reported white-collar crimes" = "Whitecollar",
                    "the number of reported juvenile crimes" = "Juvenile") 
 
@@ -151,7 +149,7 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                               # Allow users to select to view the data as a curve, but warn them that
                               # this will interpolate missing data, so it's not 100% accurate
                               
-                              checkboxInput("line", label = "View as a curve (missing data will be interpolated)"),
+                              checkboxInput("line", label = "View top plot as a curve (missing data is interpolated)"),
                               
                               
                               # Let users select the regions to plot
@@ -169,9 +167,14 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                             mainPanel(
                              wellPanel(
                                h4("Instructions"),
-                              p("Select up to five regions and an indicator to view the data in the plot. Hover over each point for more information.", br(), 
-                                "Tick the box to connect the points with a curve. Please note the hover function does not work with the curve setting.")), 
-                              plotlyOutput("scatterplot")))),
+                               h5(strong("Top plot")),
+                              p("The top plot displays a given indicator broken down by region. Select up to five regions and an indicator to view the data in the plot. Hover over each point for more information. Tick the box to connect the points with a curve. Please note the hover function does not work with the curve setting.", br()), 
+                             h5(strong("Bottom plot")),
+                             p("The bottom plot displays the median of the selected indicator across regions from 1990 to 2010. It serves as a tool for comparison.")),
+                             plotlyOutput("scatterplot"),
+                             br(),
+                             br(),
+                             plotOutput("median")))),
 
                  # REGRESSION
                  # Fouth tab holds a model plot
@@ -244,7 +247,7 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                              mainPanel(
                              wellPanel(  h4("Instructions"),
                                p("Please select a year and an indicator. Then allow for up to a minute for the map to load.", 
-                                 br(),"Click and drag the map to pan to other areas. Hover over an individual region to display the data." )),
+                                 br(),"Click and drag the map to pan to other areas. Hover over an individual region to display the data. Please note that regions for which there is no data (i.e. NA) are displayed in gray." )),
                                br(),
                                leafletOutput("map", width = "100%", height = "500px")))))
 
@@ -297,7 +300,7 @@ server <- function(input, output){
                geom_point(alpha = 0.8) + 
                labs(x = "Year", 
                     y = names(crime_options[which(crime_options == input$y)]),
-                    title = paste0(names(crime_options[which(crime_options == input$y)]), " from 1990 to 2010 ")) +
+                    title = paste0(names(crime_options[which(crime_options == input$y)]), " (1990 - 2010)")) +
                theme(text = element_text(size = 10), 
                      axis.text.y = element_text(angle = 90, hjust = 1)) +
                scale_color_discrete(name = "Regions")) %>% 
@@ -310,7 +313,7 @@ server <- function(input, output){
         geom_smooth(se = F) + 
         labs(x = "Year", 
              y = names(crime_options[which(crime_options == input$y)]),
-             title = paste0(names(crime_options[which(crime_options == input$y)]), " from 1990 to 2010 ")) +
+             title = paste0(names(crime_options[which(crime_options == input$y)]), " (1990 - 2010)")) +
         theme(text = element_text(size = 10), 
               axis.text.y = element_text(angle = 90, hjust = 1)) +
         scale_color_discrete(name = "Regions")) %>% 
@@ -318,6 +321,18 @@ server <- function(input, output){
       
     } 
     })
+  
+  
+  # Plot that displays median of the indicator for comparison with individual regions
+  # I chose to use the median rather than the average because the median is insulated from extreme values
+  
+  output$median <- renderPlot({
+       ggplot(data = crime_plot, aes_string(x = "YEAR", y = input$y)) +
+       geom_smooth(se = F, formula = median(input$y)) +
+      labs(x = "Year", 
+           y = names(crime_options[which(crime_options == input$y)]),
+           title = paste0("Median ", str_to_lower(names(crime_options[which(crime_options == input$y)])), " across Russia (1990 to 2010)"))
+  })
   
   # Data table output.
   # Save the data, filtered by the user-selected year and selecting for just the name and indicator
@@ -375,7 +390,7 @@ server <- function(input, output){
       addLegend("bottomright",
                 pal = coloring,
                 values = ~selected_var,
-                na.label = "No data",
+                na.label = "NA",
                 title = names(crime_options_map[which(crime_options_map == input$map_var)]),
                 opacity = 1)
   })
