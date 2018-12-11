@@ -122,8 +122,9 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                             
                             mainPanel(
                               wellPanel(h4("Instructions"),
-                              p("Select the year and the indicator to view the data in the table.
-                                Click on the indicator column name to arrange by the indicator. Use the search bar to search for a particular region."),
+                              p("This tool helps to answer questions such as 'In 1990, which region had the highest crime share?'
+                                Simply select the year (for example, 1990) and the indicator (for example, crime share) and then click on the indicator column name to arrange in descending order by that indicator. 
+                                Use the search bar to search for a particular region."),
                               br()),
                               DT::dataTableOutput("ranking")))),
                  
@@ -147,6 +148,12 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                               htmlOutput("define_variables_y"),  
                               br(),
                               
+                              # Allow users to select to view the data as a curve, but warn them that
+                              # this will interpolate missing data, so it's not 100% accurate
+                              
+                              checkboxInput("line", label = "View as a curve (missing data will be interpolated)"),
+                              
+                              
                               # Let users select the regions to plot
                               # Use the options function to allow users to select a max of five regions
           
@@ -162,7 +169,8 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                             mainPanel(
                              wellPanel(
                                h4("Instructions"),
-                              p("Select up to five regions and an indicator to view the data in the plot.", br(), "Hover over each point for more information.")), 
+                              p("Select up to five regions and an indicator to view the data in the plot. Hover over each point for more information.", br(), 
+                                "Tick the box to connect the points with a curve. Please note the hover function does not work with the curve setting.")), 
                               plotlyOutput("scatterplot")))),
 
                  # REGRESSION
@@ -279,8 +287,12 @@ server <- function(input, output){
   # Color by region.
   # Use my vector of labels to generate a reactive title and axis labels.
   # Rename the legend and remove the Plotly display bar, which is an eyesore and not useful. 
+  # The ifelse statement allows users to check a box to plot the data as a curve instead of points.
+  # The default setting is points, because it is more accurate (AKA ggplot is not interpolating missing data)
   
   output$scatterplot <- renderPlotly({
+    
+    if(input$line == FALSE) {
     ggplotly(ggplot(data = regions_subset(), aes_string(x = "Year", y = input$y, color = "Region")) + 
                geom_point(alpha = 0.8) + 
                labs(x = "Year", 
@@ -289,7 +301,23 @@ server <- function(input, output){
                theme(text = element_text(size = 10), 
                      axis.text.y = element_text(angle = 90, hjust = 1)) +
                scale_color_discrete(name = "Regions")) %>% 
-               config(displayModeBar = FALSE) })
+               config(displayModeBar = FALSE)  }
+    else {
+      
+      # I disabled tooltip for the curve because it is messy (displaying interpolated data for the year 2000.5 for instance)
+      
+      ggplotly(tooltip = F, ggplot(data = regions_subset(), aes_string(x = "Year", y = input$y, color = "Region")) + 
+        geom_smooth(se = F) + 
+        labs(x = "Year", 
+             y = names(crime_options[which(crime_options == input$y)]),
+             title = paste0(names(crime_options[which(crime_options == input$y)]), " from 1990 to 2010 ")) +
+        theme(text = element_text(size = 10), 
+              axis.text.y = element_text(angle = 90, hjust = 1)) +
+        scale_color_discrete(name = "Regions")) %>% 
+        config(displayModeBar = FALSE) 
+      
+    } 
+    })
   
   # Data table output.
   # Save the data, filtered by the user-selected year and selecting for just the name and indicator
