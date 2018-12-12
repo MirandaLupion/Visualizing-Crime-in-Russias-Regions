@@ -16,13 +16,13 @@ library(tidyverse)
 # Here I read it in. 
 # I rename the variables so that they'll appear nicely in the tooltip function of Plotly. 
 # This function, which allows the user to hover over a point and get more info, does not allow for custom names
-# using a predefined vector. So to get nice labels, you need to have nice variable names already.
+# using a predefined vector. So to get nice labels, you need to have "nice" variable names already.
 
 crime_master <- read_rds("r_4_tidy.rds") %>%
   rename(Murder = MURDER, Accidents = ROADACCIDENT, Victims = ROADVICTIM, Share = CRIMESHARE, Rape = RAPE,
          Robbery = ROBBERY, Whitecollar = ECONCRIME, Juvenile = JUVENILECRIME) %>%
   
-  # I choose to round these two variables so that their quantities will display more nicely in the map, plot, and data table
+# I choose to round these two variables so that their quantities will display more nicely in the map, plot, and data table
   
   mutate(Accidents = round(Accidents, digits = 2)) %>%
   mutate(Victims = round(Victims, digits = 2)) 
@@ -38,12 +38,12 @@ crime_map <- crime_master
 
 # Read in the shape file for the map from the files stored in the app folder
 # Project the shape file in the standard WGS 84 projection. 
-# I chose this projection because itis used by most GPS navigation tools and the tech, on which Leaflet is based
+# I chose this projection because it is used by most GPS navigation tools and the tech, on which Leaflet is based
 
 rf_map <- readOGR(dsn = "RUS_adm", layer = "RUS_adm1")
 rf_map <- spTransform(rf_map, CRS("+init=epsg:4326"))
 
-# Create a vector of nice labels for the user-selected variables for the plot and the table 
+# Create a vector of nice labels for the user-selected variables for the plots and the table 
 
 crime_options <- c("Road accidents" = "Accidents", 
                    "Victims of road accidents" = "Victims",
@@ -64,7 +64,8 @@ crime_options_map <- c("Road accidents" = "Accidents",
                    "Murders" = "Murder",
                    "Incidences of juvenile crime" = "Juvenile") 
 
-# Create a vector of definitions for these variables
+# Create a vector of definitions for these variables.
+# The variable's definition will be displayed when the user selects a given variable.
 
 crime_definitions <- c("the number of road accidents per 100,000 persons" = "Accidents", 
                    "the number of road accident victims per 100,000 persons" = "Victims",
@@ -76,7 +77,7 @@ crime_definitions <- c("the number of road accidents per 100,000 persons" = "Acc
                    "the number of reported juvenile crimes" = "Juvenile") 
 
 # Define UI for application with a nice theme
-# Use a navBar structure because the three visual compoenents each require different inputs 
+# Use a navBar structure because the four visual compoenents each require different inputs 
 
 ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                 
@@ -120,14 +121,14 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                             
                             mainPanel(
                               wellPanel(h4("Instructions"),
-                              p("This tool helps to answer questions such as 'In 1990, which region had the highest crime share?'
+                              p("This tool helps to answer questions such as: in 1990, which region had the highest crime share?
                                 Simply select the year (for example, 1990) and the indicator (for example, crime share) and then click on the indicator column name to arrange in descending order by that indicator. 
                                 Use the search bar to search for a particular region."),
                               br()),
                               DT::dataTableOutput("ranking")))),
                  
                  # PLOT
-                 # Third tab panel holds the plot
+                 # Third tab panel holds the plots
                  # Uses a sidebarLayout 
                  
                  tabPanel("Plot the indicators",
@@ -161,19 +162,32 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                                                          multiple = TRUE,  
                                                          options = list(maxItems = 5), 
                                                          selected = "Moscow")), 
-                            # Plot output
+                            # Plot outputs
                             # I chose to put the instructions in a wellPanel to make them distinct from the visualization
                             
                             mainPanel(
                              wellPanel(
                                h4("Instructions"),
                                h5(strong("Top plot")),
-                              p("The top plot displays a given indicator broken down by region. Select up to five regions and an indicator to view the data in the plot. Hover over each point for more information. Tick the box to connect the points with a curve. Please note the hover function does not work with the curve setting.", br()), 
+                              p("The top plot displays a given indicator broken down by region. 
+                                Select up to five regions and an indicator to view the data in the plot. 
+                                Hover over each point for more information. 
+                                Tick the box to connect the points with a curve. 
+                                Please note that the hover function does not work with the curve setting.", 
+                                br()), 
                              h5(strong("Bottom plot")),
-                             p("The bottom plot displays the median of the selected indicator across regions from 1990 to 2010. It serves as a tool for comparison.")),
+                             p("The bottom plot displays the median of the selected indicator across regions from 1990 to 2010. 
+                               It serves as a tool for comparing regional data to the national trend.")),
+                             
+                             # Put the scatterplot first, because it's the focus of this panel
+                             
                              plotlyOutput("scatterplot"),
                              br(),
                              br(),
+                             
+                             # Put the comparison plot (which just plots the national median for a given indicator) second
+                             # as it's just meant to be used for comparison 
+                             
                              plotOutput("median")))),
 
                  # REGRESSION
@@ -207,7 +221,7 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                             
                             mainPanel(
                               wellPanel( h4("Instructions"),
-                              p("Select a y variable to regress against an x variable. Then check out the model summary below.")),
+                              p("Select a y variable to regress against an x variable. Then check out the model summary below. The model uses a simple linear regression.")),
                               plotOutput("regression_plot"),
                               br(),
                               htmlOutput("stats"))
@@ -246,7 +260,9 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                              
                              mainPanel(
                              wellPanel(  h4("Instructions"),
-                               p("Please select a year and an indicator. Then allow for up to a minute for the map to load.", 
+                               p("First let the map load. This may take up to one minute. 
+                                 Be patient. It's worth it.
+                                 Then select a year and an indicator and the map will more quickly reload.", 
                                  br(),"Click and drag the map to pan to other areas. Hover over an individual region to display the data. Please note that regions for which there is no data (i.e. NA) are displayed in gray." )),
                                br(),
                                leafletOutput("map", width = "100%", height = "500px")))))
@@ -269,7 +285,7 @@ server <- function(input, output){
   
   # Reactive that filters the crime_map data for the user-selected year
   # and for the user-selected variable. Selecting only the necessary 
-  # variables and data makes the map render more quickly.
+  # variables and data AND THEN joining the data to the shapefile makes the map render more quickly.
   # Rename the input$map_var to a single variable name, which makes it easier
   # to work with in conjunction with the shapefile.
   
@@ -334,7 +350,7 @@ server <- function(input, output){
            title = paste0("Median ", str_to_lower(names(crime_options[which(crime_options == input$y)])), " across Russia (1990 to 2010)"))
   })
   
-  # Data table output.
+  # Data table output
   # Save the data, filtered by the user-selected year and selecting for just the name and indicator
   # to a new dataframe.
   # Display this data frame in the app.
@@ -351,24 +367,27 @@ server <- function(input, output){
   })
    
   # Map output
-  # See code for comments
+  # See code for in-line comments
 
   output$map <- renderLeaflet({
 
-    # Merge the shapefile with the sub_setted map data
+    # Merge the shapefile with the subsetted map data
+    # Only merge after the filtering the data
+    # Merging before means that the map never loads 
+    # There is too much data in that case
     
    rf_map <- merge(rf_map, map_subset(), by = "ID_1", duplicateGeoms = TRUE)
    
    # Select the user-inputted variable to map (choropleth) in the domain 
-   # Color by the selected indicator
+   # Color by the selected indicator using a numeric symbology 
    
-    coloring <- colorNumeric(palette = "Blues",
+    coloring <- colorNumeric(palette = "YlGnBu",
                              domain = rf_map@data$selected_var)
   
   # Set the options for the leaflet viewer
   # Allow the user to drag
   # Add a basemap to help users situate themselves 
-  # Set the default view and the max bounds  
+  # Set the default view and the max bounds, so users can't drag themselves to irrelevant parts of the map
   # Add the polygon shapefile 
   # Add custom and reactive pop-up labels and color by the user-selected indicator  
     
@@ -382,10 +401,13 @@ server <- function(input, output){
                                   names(crime_options_map[which(crime_options_map == input$map_var)]), ": ",  selected_var),
                   color = ~coloring(selected_var)) %>%
 
-      # Add a legend in the bottom
+      # Add a legend in the bottom to maximize view of the map
       # Which uses the coloring set above
       # And the user-selected variable
       # And has a reactive title
+      # I cannot move or change the NA display in the legend 
+      # I know it's smushed up against the other data, but Leaflet doesn't let you alter it
+      # or remove it. Even setting it to F or NA does not help.
 
       addLegend("bottomright",
                 pal = coloring,
@@ -396,6 +418,10 @@ server <- function(input, output){
   })
   
   # Correlation plot output
+  # Simple interactive ggplot with reactive labels and titles 
+  # Using the lm model because it's a simple way for assessing the relationship (positive or negative)
+  # between two indicators
+  # Since it's an exploratory data analysis tool, there isn't a need to do more than that here 
   
   output$regression_plot <- renderPlot({
     ggplot(data = crime_plot, aes_string(x = input$x_reg, y = input$y_reg)) +
@@ -414,6 +440,8 @@ server <- function(input, output){
     
     x_var_reg <- input$x_reg
     y_var_reg <- input$y_reg
+    
+    # Set cutoffs based on the data and convention as specified by data camp
     
    coeff <- cor(x = crime_plot[[x_var_reg]], y = crime_plot[[y_var_reg]], use = "pairwise")
     if (round(coeff, digits = 2) > .4 ) {
@@ -436,6 +464,8 @@ server <- function(input, output){
     fstat <- m1$fstatistic 
     pval <- pf(fstat[1], fstat[2], fstat[3], lower.tail = F)
     
+    # Set a signifance level with respect to .05 as specified by data camp 
+    
     if (pval < .05) { 
       is_sig <- "is"
     } else {
@@ -443,12 +473,15 @@ server <- function(input, output){
     }})
   
   # Define the summary text for the regression plot
-  
   # Define the summary text output
-  # Regress accuracy against the user-selected variable
-  # Save the summary of the model and extract the p-value from the model
-  # Create a reactive text ouput in which the 1) r squared, p value, and significance explanation change 
+  # Create a reactive text ouput in which the r squared, p value, and significance explanation change 
   # in response to the user selected variable 
+  # Because this is an exploratory data tool, I choose this simply display rather than printing a regression table
+  # I hope that this will allow users to understand the simple relationship between the indicators and
+  # that this display choice will avoid overwhelming the user 
+  # I use bold text to highlight the values within the text block to draw user attention to them 
+  # If the user tries to regress the same variable against itself, the model summary reacts,
+  # telling the user to choose two distinct variables
   
   output$stats <- renderPrint({
     
@@ -478,7 +511,8 @@ server <- function(input, output){
     
   })
   
-  # Create a variable descriptor for the plot
+  # Create a indicator descriptor for the plots tab
+  # This simply defines the selected indicator
   
   output$define_variables_y <- renderUI({
   HTML(paste("* Where ",
@@ -488,7 +522,7 @@ server <- function(input, output){
     
   })
   
-  # Create a y variable descriptor for the reg plot
+  # Create a y variable descriptor for the regression plot
   
   output$define_variables_y_reg <- renderUI({
     HTML(paste("* Where ",
@@ -498,7 +532,7 @@ server <- function(input, output){
     
   })
   
-  # Create a x variable descriptor for the reg plot
+  # Create a x variable descriptor for the regression plot
   
   output$define_variables_x_reg <- renderUI({
     HTML(paste("* Where ",
@@ -536,6 +570,15 @@ server <- function(input, output){
       p("This application allows users to visualize crime data for 82 of the Russian Federation's federal subjects (administrative units) from 1990 through 2010."),
       p("Click through the above tabs to view the data interactively in a table, scatterplot, linear regression model, and map. This data exploration highlights the geographic disparity across Russia's regions in terms of social indicators.  
         The data also helps communicate changes in crime trends from the tumultuous 1990s period through President Vladimir Putin's first two terms and the first half of Dmitry Medvedev's presidency."),
+      h3("So what?"),
+      p(em("But Miranda - I don't care about Russia. Isn't that just a country full of vokda-drinkers, snow, and hackers?")),
+      p("While we will have to agree to disagree on that point (Poles claim vodka is of ", 
+        tags$a(href = "https://www.rferl.org/a/who-invented-vodka/28946217.html", "Polish origin"), " by the way), I still think you'll find this app interesting. 
+        One of the dominant narratives that analysts cite to explain Vladimir Putin's genuine popularity focuses on crime reduction. 
+        Put simply, after the collapse of the Soviet Union in 1991, the newly democratizing state was weak and crime rates soared. Putin came to power promising to reassert the state's power 
+        and end the turmoil of the chaotic and crime-ridden 90s. The majority of Russians believe he did just that. 
+        But does the data hold up? Did crime increase in the 90s and drop off over Putin's first two terms (2000 - 2008)? 
+        Using these tools to explore the data, you might find that the answer challenges the widely accepted story."),
       h3("Sources"), 
       p("Inter-university Consortium for Political and Social Research (ICPSR):", 
         br(),   
