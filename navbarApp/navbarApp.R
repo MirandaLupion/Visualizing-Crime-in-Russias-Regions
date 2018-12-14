@@ -118,12 +118,15 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                             # The main panel holds the data table and instructions for how to 
                             # manipulate the data in the table
                             # I chose to put the instructions in a wellPanel to make them distinct from the visualization
+                            # Also reactively warn the user when they have selected a variable year combination for which
+                            # there is no data 
                             
                             mainPanel(
                               wellPanel(h4("Instructions"),
                               p("This tool helps to answer questions such as: in 1990, which region had the highest crime share?
                                 Simply select the year (for example, 1990) and the indicator (for example, crime share) and then click on the indicator column name to arrange in descending order by that indicator. 
                                 Use the search bar to search for a particular region."),
+                              htmlOutput("NoData"),
                               br()),
                               DT::dataTableOutput("ranking")))),
                  
@@ -365,6 +368,19 @@ server <- function(input, output){
                 rownames = FALSE,
                 colnames = c("Administrative unit", names(crime_options[which(crime_options == input$table_indicator)])))
   })
+  
+  
+  # If the data selects an indicator and year for which there is no data
+  # they are reactively warned
+  
+  output$NoData <- renderPrint({
+    if (input$year_table %in% c(1990:1999) & 
+        input$table_indicator %in% c(crime_options[6], crime_options[7], crime_options[5])){
+      HTML(paste(strong("We do not have data for this indicator before 2000. Please select another indicator or later year.")))
+    }else {
+      HTML("")
+    }
+  })
    
   # Map output
   # See code for in-line comments
@@ -569,13 +585,13 @@ server <- function(input, output){
       h3("Summary"),
       p("This application allows users to visualize crime data for 82 of the Russian Federation's federal subjects (administrative units) from 1990 through 2010."),
       p("Click through the above tabs to view the data interactively in a table, scatterplot, linear regression model, and map. This data exploration highlights the geographic disparity across Russia's regions in terms of social indicators.  
-        The data also helps communicate changes in crime trends from the tumultuous 1990s period through President Vladimir Putin's first two terms and the first half of Dmitry Medvedev's presidency."),
+        The data also helps communicate changes in crime trends from the tumultuous 1990s period through President Vladimir Putin's first two terms (2000-2008) and the first half of Dmitry Medvedev's presidency (2008-2012)."),
       h3("So what?"),
       p(em("But Miranda - I don't care about Russia. Isn't that just a country full of vokda-drinkers, snow, and hackers?")),
-      p("While we will have to agree to disagree on that point (Poles claim vodka is of ", 
-        tags$a(href = "https://www.rferl.org/a/who-invented-vodka/28946217.html", "Polish origin"), " by the way), I still think you'll find this app interesting. 
+      p("While we will have to agree to disagree on that point (By the way, Poles claim vodka is a ", 
+        tags$a(href = "https://www.rferl.org/a/who-invented-vodka/28946217.html", "Polish creation"), "), I still think you'll find this app interesting. 
         One of the dominant narratives that analysts cite to explain Vladimir Putin's genuine popularity focuses on crime reduction. 
-        Put simply, after the collapse of the Soviet Union in 1991, the newly democratizing state was weak and crime rates soared. Putin came to power promising to reassert the state's power 
+        Put simply, after the collapse of the Soviet Union in 1991, the newly democratizing state was weak and crime rates soared. Putin came to power promising to reassert the state's control 
         and end the turmoil of the chaotic and crime-ridden 90s. The majority of Russians believe he did just that. 
         But does the data hold up? Did crime increase in the 90s and drop off over Putin's first two terms (2000 - 2008)? 
         Using these tools to explore the data, you might find that the answer challenges the widely accepted story."),
@@ -589,7 +605,10 @@ server <- function(input, output){
         br(), 
         "Polygon shapefile for Russia's first-level administrative boundaries (RUS_adm1.shp and associated files)", 
         tags$a(href = "http://www.diva-gis.org/", 
-               br(),"Click here to learn more about this data"))))
+               br(),"Click here to learn more about this data")), 
+        h3("Спасибо большое"),
+        p("I'd like to thank David Kane, preceptor for the GOV 1005 class, TFs Nick Short and Albert Rivero, and my classmates for all their feedback. 
+        Their suggestions and troubleshooting made this app a reality.")))
   })
   
 }
