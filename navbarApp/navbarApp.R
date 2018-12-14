@@ -176,7 +176,7 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                                 Select up to five regions and an indicator to view the data in the plot. 
                                 Hover over each point for more information. 
                                 Tick the box to connect the points with a curve. 
-                                Please note that the hover function does not work with the curve setting.", 
+                                Please note that the hover function has been disabled for the curve setting.", 
                                 br()), 
                              h5(strong("Bottom plot")),
                              p("The bottom plot displays the median of the selected indicator across regions from 1990 to 2010. 
@@ -264,7 +264,7 @@ ui <- navbarPage("Crime in the Russian Regions", theme = shinytheme("flatly"),
                              mainPanel(
                              wellPanel(  h4("Instructions"),
                                p("First let the map load. This may take up to one minute. 
-                                 Be patient. It's worth it.
+                                 Be patient. It's worth it. You're loading 11 time zones worth of data here! 
                                  Then select a year and an indicator and the map will more quickly reload.", 
                                  br(),"Click and drag the map to pan to other areas. Hover over an individual region to display the data. Please note that regions for which there is no data (i.e. NA) are displayed in gray." )),
                                br(),
@@ -585,7 +585,7 @@ server <- function(input, output){
       h3("Summary"),
       p("This application allows users to visualize crime data for 82 of the Russian Federation's federal subjects (administrative units) from 1990 through 2010."),
       p("Click through the above tabs to view the data interactively in a table, scatterplot, linear regression model, and map. This data exploration highlights the geographic disparity across Russia's regions in terms of social indicators.  
-        The data also helps communicate changes in crime trends from the tumultuous 1990s period through President Vladimir Putin's first two terms (2000-2008) and the first half of Dmitry Medvedev's presidency (2008-2012)."),
+        The data also helps communicate changes in crime trends from the tumultuous 1990s period through President Vladimir Putin's first two terms (2000-2008) and the first half of Dmitry Medvedev's presidency (2008-2010)."),
       h3("So what?"),
       p(em("But Miranda - I don't care about Russia. Isn't that just a country full of vokda-drinkers, snow, and hackers?")),
       p("While we will have to agree to disagree on that point (By the way, Poles claim vodka is a ", 
